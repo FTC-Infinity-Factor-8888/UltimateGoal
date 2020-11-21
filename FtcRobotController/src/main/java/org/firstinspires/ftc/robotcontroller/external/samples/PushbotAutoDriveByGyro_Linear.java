@@ -297,7 +297,7 @@ public class PushbotAutoDriveByGyro_Linear extends LinearOpMode {
      *                  0 = fwd. +ve is CCW from fwd. -ve is CW from forward.
      *                  If a relative angle is required, add/subtract from current heading.
      * @param PCoeff    Proportional Gain coefficient
-     * @return
+     * @return true if current angle is within threshold of the target angle
      */
     boolean onHeading(double speed, double angle, double PCoeff) {
         double   error ;
