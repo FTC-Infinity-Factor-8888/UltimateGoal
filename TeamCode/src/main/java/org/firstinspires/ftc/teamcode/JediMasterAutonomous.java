@@ -4,10 +4,10 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
@@ -92,8 +92,6 @@ public class JediMasterAutonomous extends LinearOpMode {
     public void runOpMode() {
         double ticksPerMotorRev;
         double WheelCircumferenceInInches;
-        double StrafeSpeed;
-        float StrafeHeading;
 
         IntakeLift = hardwareMap.get(Servo.class, "IntakeLift");
         LFMotor = hardwareMap.get(DcMotor.class, "LF Motor");
@@ -114,8 +112,6 @@ public class JediMasterAutonomous extends LinearOpMode {
         TurnSpeed = 0.3;
         HoldSpeed = 0.1;
         HoldTime = 2000;
-        StrafeSpeed = 0.5;
-        StrafeHeading = CurrentHeading;
         initializeMotors();
         initializeIMU();
         MatchSpecificUI();
@@ -132,17 +128,6 @@ public class JediMasterAutonomous extends LinearOpMode {
         telemetry.addData("Current Heading", CurrentHeading);
         telemetry.update();
         sleep(5000);
-    }
-
-    /**
-     * Determine if the program should stop. Check if
-     * opModeIsActive, or if the B button on the gamepad is pressed.
-     */
-    private boolean mayIKeepGoing() {
-        if (robotCanKeepGoing == true) {
-            robotCanKeepGoing = opModeIsActive() && !gamepad1.b;
-        }
-        return robotCanKeepGoing;
     }
 
     /**
@@ -234,19 +219,18 @@ public class JediMasterAutonomous extends LinearOpMode {
 
     /**
      * Drive in a straight line.
-     * @param speed Motor speed, -1 to 1. Negative number moves robot backward.
      * @param distance How far to move, in inches.
      */
     private void drive(double distance) {
         debug("Drive is called");
         // Drive should be straight along the heading
-        desiredHeading = getHeading();
+        double desiredHeading = getHeading();
         debug("Heading " + desiredHeading);
         distanceInTicks = distance * ticksPerInch;
-        leftFrontTargetPosition = LFMotor.getCurrentPosition() + distanceInTicks;
-        LeftRearTargetPosition = LRMotor.getCurrentPosition() + distanceInTicks;
-        RightFrontTargetPosition = RFMotor.getCurrentPosition() + distanceInTicks;
-        RightRearTargetPosition = RRMotor.getCurrentPosition() + distanceInTicks;
+        leftFrontTargetPosition = (int) (LFMotor.getCurrentPosition() + distanceInTicks);
+        LeftRearTargetPosition = (int) (LRMotor.getCurrentPosition() + distanceInTicks);
+        RightFrontTargetPosition = (int) (RFMotor.getCurrentPosition() + distanceInTicks);
+        RightRearTargetPosition = (int) (RRMotor.getCurrentPosition() + distanceInTicks);
         LFMotor.setTargetPosition(leftFrontTargetPosition);
         LRMotor.setTargetPosition(LeftRearTargetPosition);
         RFMotor.setTargetPosition(RightFrontTargetPosition);
@@ -287,7 +271,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 }
             }
             PowerTheWheels(LeftSpeed, LeftSpeed, RightSpeed, RightSpeed);
-            // TODO: Add telemetry information
+            // Show motor power while driving:
             telemetry.addData("LFPower", LFMotor.getPower());
             telemetry.addData("LRPower", LRMotor.getPower());
             telemetry.addData("RFPower", RFMotor.getPower());
@@ -383,10 +367,10 @@ public class JediMasterAutonomous extends LinearOpMode {
         debug("Strafe is called");
         desiredHeading = getHeading();
         distanceInTicks = distance * ticksPerInch;
-        leftFrontTargetPosition = LFMotor.getCurrentPosition() + distanceInTicks;
-        LeftRearTargetPosition = LRMotor.getCurrentPosition() + distanceInTicks;
-        RightFrontTargetPosition = RFMotor.getCurrentPosition() + distanceInTicks;
-        RightRearTargetPosition = RRMotor.getCurrentPosition() + distanceInTicks;
+        leftFrontTargetPosition = (int) (LFMotor.getCurrentPosition() + distanceInTicks);
+        LeftRearTargetPosition = (int) (LRMotor.getCurrentPosition() + distanceInTicks);
+        RightFrontTargetPosition = (int) (RFMotor.getCurrentPosition() + distanceInTicks);
+        RightRearTargetPosition = (int) (RRMotor.getCurrentPosition() + distanceInTicks);
         LFMotor.setTargetPosition(-leftFrontTargetPosition);
         LRMotor.setTargetPosition(LeftRearTargetPosition);
         RFMotor.setTargetPosition(RightFrontTargetPosition);
@@ -429,7 +413,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 }
             }
             PowerTheWheels(LeftSpeed, LeftSpeed, RightSpeed, RightSpeed);
-            // TODO: Add telemetry information
+            // Show motor power while strafing:
             telemetry.addData("LFPower", LFMotor.getPower());
             telemetry.addData("LRPower", LRMotor.getPower());
             telemetry.addData("RFPower", RFMotor.getPower());
