@@ -54,6 +54,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     private void AllSix() {
         if (StartLine == 1) {
             if (TargetZone == 1) {
+                //1a
                 drive(53);
                 Turn(25);
                 drive(17);
@@ -62,25 +63,56 @@ public class JediMasterAutonomous extends LinearOpMode {
                 Strafe(18);
                 Hold(0);
                 drive(21);
+                Hold(0);
             } else if (TargetZone == 2) {
+                //1b
                 drive(80);
-                Turn(-25);
-                drive(12);
-                drive(-10);
+                Turn(-30);
+                drive(20);
+                drive(-20);
                 Turn(0);
-                drive(-9);
+                drive(-3);
+                Hold(0);
             } else {
+                //1c
+                drive(100);
+                Turn(25);
+                drive(20);
+                drive(-20);
+                Turn(0);
+                Strafe(18);
+                Hold(0);
+                drive(-20);
+                Hold(0);
             }
         } else {
             if (TargetZone == 1) {
-            } else if (TargetZone == 2) {
-                drive(80);
-                Turn(15);
-                drive(14);
-                drive(-12);
+                //2a
+                drive(53);
+                Turn(60);
+                drive(36);
+                drive(-36);
                 Turn(0);
-                drive(-11);
+                drive(25);
+                Hold(0);
+            } else if (TargetZone == 2) {
+                //2b
+                drive(80);
+                Turn(30);
+                drive(18);
+                drive(-18);
+                Turn(0);
+                drive(-5);
+                Hold(0);
             } else {
+                //2c
+                drive(100);
+                Turn(60);
+                drive(36);
+                drive(-36);
+                Turn(0);
+                drive(-25);
+                Hold(0);
             }
         }
     }
@@ -114,6 +146,8 @@ public class JediMasterAutonomous extends LinearOpMode {
         HoldTime = 2000;
         initializeMotors();
         initializeIMU();
+        //Testing only. Remove before Competition!!!
+        IntakeLift.setPosition(1.0);
         MatchSpecificUI();
         telemetry.addData("Status", "Ready to start - v1.1.5");
         telemetry.update();
@@ -123,6 +157,7 @@ public class JediMasterAutonomous extends LinearOpMode {
             IntakeLift.setPosition(0.9);
             sleep(1000);
             AllSix();
+            IntakeLift.setPosition(0.0);
         }
         CurrentHeading = getHeading();
         telemetry.addData("Current Heading", CurrentHeading);
