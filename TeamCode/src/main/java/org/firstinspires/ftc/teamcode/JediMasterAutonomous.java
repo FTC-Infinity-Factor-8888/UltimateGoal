@@ -16,7 +16,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 @Autonomous(name = "JediMasterAutonomous (Blocks to Java)")
 public class JediMasterAutonomous extends LinearOpMode {
 
-    private Servo IntakeLift;
+    private Servo intakeLift;
     private DcMotor LFMotor;
     private DcMotor RFMotor;
     private DcMotor LRMotor;
@@ -125,7 +125,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         double ticksPerMotorRev;
         double WheelCircumferenceInInches;
 
-        IntakeLift = hardwareMap.get(Servo.class, "IntakeLift");
+        intakeLift = hardwareMap.get(Servo.class, "IntakeLift");
         LFMotor = hardwareMap.get(DcMotor.class, "LF Motor");
         RFMotor = hardwareMap.get(DcMotor.class, "RF Motor");
         LRMotor = hardwareMap.get(DcMotor.class, "LR Motor");
@@ -146,18 +146,20 @@ public class JediMasterAutonomous extends LinearOpMode {
         HoldTime = 2000;
         initializeMotors();
         initializeIMU();
-        //Testing only. Remove before Competition!!!
-        IntakeLift.setPosition(1.0);
+        //Make robot legal-size by raising intake
+        intakeLift.setPosition(1.0);
         MatchSpecificUI();
-        telemetry.addData("Status", "Ready to start - v1.1.5");
+        telemetry.addData("Status", "Ready to start - v1.1.6");
         telemetry.update();
         waitForStart();
         if (opModeIsActive()) {
+            //TODO: make sure we check opModeIsActive
+
             // Put run blocks here.
-            IntakeLift.setPosition(0.9);
+            intakeLift.setPosition(0.9);
             sleep(1000);
             AllSix();
-            IntakeLift.setPosition(0.0);
+            intakeLift.setPosition(0.0);
         }
         CurrentHeading = getHeading();
         telemetry.addData("Current Heading", CurrentHeading);
