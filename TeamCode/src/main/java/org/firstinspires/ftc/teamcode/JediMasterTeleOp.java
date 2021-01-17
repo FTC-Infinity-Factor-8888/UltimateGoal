@@ -4,8 +4,9 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -20,13 +21,14 @@ public class JediMasterTeleOp extends LinearOpMode {
     private DcMotor LRMotor;
     private DcMotor RRMotor;
     private BNO055IMU imu;
+    private Servo Servo1;
 
-    double leftRearMotorPower;
-    float desiredHeading;
-    double leftFrontMotorPower;
-    double rightFrontMotorPower;
+    double leftFrontMotorVelocity;
+    double leftRearMotorVelocity;
+    double rightFrontMotorVelocity;
+    double rightRearMotorVelocity;
     float CurrentHeading;
-    double rightRearMotorPower;
+    float desiredHeading;
     double Delta;
     double distanceInTicks;
     int leftFrontTargetPosition;
@@ -39,6 +41,9 @@ public class JediMasterTeleOp extends LinearOpMode {
     double LeftSpeed;
     double RightSpeed;
     double HoldSpeed;
+    //Maximum amount of ticks/second, and also compensate for joystick direction.
+    private int maximumRobotSpeed = -2350;
+    private int maximumHalfSpeed = maximumRobotSpeed/2;
 
     /**
      * This function is executed when this Op Mode is selected from the Driver Station.
@@ -58,6 +63,7 @@ public class JediMasterTeleOp extends LinearOpMode {
         LRMotor = hardwareMap.get(DcMotor.class, "LR Motor");
         RRMotor = hardwareMap.get(DcMotor.class, "RR Motor");
         imu = hardwareMap.get(BNO055IMU.class, "imu");
+        Servo1 = hardwareMap.get(Servo.class, "Servo1");
 
         // Initialize variables
         robotCanKeepGoing = true;
@@ -77,8 +83,45 @@ public class JediMasterTeleOp extends LinearOpMode {
         telemetry.addData("Status", "Ready to start - v5");
         telemetry.update();
         waitForStart();
+
+        double currentRobotSpeed;
+        double forwardAmount;
+        double strafeAmount;
+        double turnAmount;
+
         if (opModeIsActive()) {
-            // Put run blocks here.
+            //TODO: Do stuff
+            while (opModeIsActive()) {
+                //right trigger is to accelerate past the maximumHalfSpeed
+                currentRobotSpeed = maximumHalfSpeed + maximumHalfSpeed * gamepad1.right_trigger;
+                forwardAmount = gamepad1.left_stick_y * currentRobotSpeed;
+                strafeAmount = gamepad1.left_stick_x * currentRobotSpeed;
+                turnAmount = gamepad1.right_stick_x * currentRobotSpeed;
+                leftFrontMotorVelocity = forwardAmount - strafeAmount;
+                leftRearMotorVelocity = forwardAmount + strafeAmount;
+                rightFrontMotorVelocity = forwardAmount + strafeAmount;
+                rightRearMotorVelocity = forwardAmount - strafeAmount;
+                ((DcMotorEx) LFMotor).setVelocity(leftFrontMotorVelocity);
+                ((DcMotorEx) LRMotor).setVelocity(leftRearMotorVelocity);
+                ((DcMotorEx) RFMotor).setVelocity(rightFrontMotorVelocity);
+                ((DcMotorEx) RRMotor).setVelocity(rightRearMotorVelocity);
+
+                if (gamepad1.dpad_down) {
+                    Servo1.setPosition(0);
+                } else if (gamepad1.dpad_up) {
+                    Servo1.setPosition(1);
+                } else {
+                    // Chill!
+                }
+                telemetry.addData("ServoPosition", Servo1.getPosition());
+                telemetry.addData("LF Velocity", ((DcMotorEx) LFMotor).getVelocity());
+                telemetry.addData("RF Velocity", ((DcMotorEx) RFMotor).getVelocity());
+                telemetry.addData("LR Velocity", ((DcMotorEx) LRMotor).getVelocity());
+                telemetry.addData("RR Velocity", ((DcMotorEx) RRMotor).getVelocity());
+                telemetry.addData("RightTrigger", gamepad1.right_trigger);
+                telemetry.update();
+            }
+
         }
         CurrentHeading = getHeading();
         Delta = desiredHeading - CurrentHeading;
@@ -154,17 +197,17 @@ public class JediMasterTeleOp extends LinearOpMode {
         Delta = desiredHeading - CurrentHeading;
         while (!(isStopRequested() || Math.abs(Delta) <= DeltaThreshhold)) {
             if (Delta > 0) {
-                leftFrontMotorPower = -TurnSpeed;
-                leftRearMotorPower = -TurnSpeed;
-                rightFrontMotorPower = TurnSpeed;
-                rightRearMotorPower = TurnSpeed;
+                leftFrontMotorVelocity = -TurnSpeed;
+                leftRearMotorVelocity = -TurnSpeed;
+                rightFrontMotorVelocity = TurnSpeed;
+                rightRearMotorVelocity = TurnSpeed;
             } else {
-                leftFrontMotorPower = TurnSpeed;
-                leftRearMotorPower = TurnSpeed;
-                rightFrontMotorPower = -TurnSpeed;
-                rightRearMotorPower = -TurnSpeed;
+                leftFrontMotorVelocity = TurnSpeed;
+                leftRearMotorVelocity = TurnSpeed;
+                rightFrontMotorVelocity = -TurnSpeed;
+                rightRearMotorVelocity = -TurnSpeed;
             }
-            PowerTheWheels(leftFrontMotorPower, leftRearMotorPower, rightFrontMotorPower, rightRearMotorPower);
+            PowerTheWheels(leftFrontMotorVelocity, leftRearMotorVelocity, rightFrontMotorVelocity, rightRearMotorVelocity);
             telemetry.addData("Desired Heading", desiredHeading);
             telemetry.addData("Current Heading", CurrentHeading);
             telemetry.addData("Delta", Delta);
@@ -183,40 +226,6 @@ public class JediMasterTeleOp extends LinearOpMode {
     /**
      * Describe this function...
      */
-    private void Hold(float Heading,
-                      // TODO: Enter the type for argument named HoldTime
-                      double HoldTime) {
-        ElapsedTime Timer;
-
-        desiredHeading = Heading;
-        CurrentHeading = getHeading();
-        Delta = desiredHeading - CurrentHeading;
-        Timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-        Timer.reset();
-        while (opModeIsActive() && Math.abs(Delta) > 0.5 && Timer.time() < HoldTime) {
-            if (Delta > 0) {
-                LeftSpeed = -HoldSpeed;
-                RightSpeed = HoldSpeed;
-            } else {
-                LeftSpeed = HoldSpeed;
-                RightSpeed = -HoldSpeed;
-            }
-            PowerTheWheels(LeftSpeed, LeftSpeed, RightSpeed, RightSpeed);
-            sleep(75);
-            PowerTheWheels(0, 0, 0, 0);
-            CurrentHeading = getHeading();
-            Delta = desiredHeading - CurrentHeading;
-            telemetry.addData("Desired Heading", desiredHeading);
-            telemetry.addData("Current Heading", CurrentHeading);
-            telemetry.addData("Delta", Delta);
-            telemetry.update();
-        }
-        PowerTheWheels(0, 0, 0, 0);
-        telemetry.addData("Desired Heading", desiredHeading);
-        telemetry.addData("Current Heading", CurrentHeading);
-        telemetry.addData("Delta", Delta);
-        telemetry.update();
-    }
 
     /**
      * Drive in a straight line.
@@ -319,7 +328,7 @@ public class JediMasterTeleOp extends LinearOpMode {
     /**
      * Describe this function...
      */
-    private void StrafeRight(double speed, double distance) {
+    private void Strafe(double speed, double distance) {
         debug("Strafe is called");
         desiredHeading = getHeading();
         distanceInTicks = distance * ticksPerInch;
@@ -335,11 +344,11 @@ public class JediMasterTeleOp extends LinearOpMode {
         LRMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         RFMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         RRMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        leftFrontMotorPower = -speed;
-        leftRearMotorPower = speed;
-        rightFrontMotorPower = speed;
-        rightRearMotorPower = -speed;
-        PowerTheWheels(leftFrontMotorPower, leftRearMotorPower, rightFrontMotorPower, rightRearMotorPower);
+        leftFrontMotorVelocity = -speed;
+        leftRearMotorVelocity = speed;
+        rightFrontMotorVelocity = speed;
+        rightRearMotorVelocity = -speed;
+        PowerTheWheels(leftFrontMotorVelocity, leftRearMotorVelocity, rightFrontMotorVelocity, rightRearMotorVelocity);
         debug("Motors On");
         telemetry.addData("LFPower ", LFMotor.getPower());
         telemetry.addData("LRPower ", LRMotor.getTargetPosition());
@@ -397,4 +406,3 @@ public class JediMasterTeleOp extends LinearOpMode {
         RRMotor.setPower(RRPower);
     }
 }
-
