@@ -22,6 +22,7 @@ public class JediMasterTeleOp extends LinearOpMode {
     private DcMotor RRMotor;
     private BNO055IMU imu;
     private Servo Servo1;
+    private Servo intakeLift;
 
     double leftFrontMotorVelocity;
     double leftRearMotorVelocity;
@@ -64,6 +65,7 @@ public class JediMasterTeleOp extends LinearOpMode {
         RRMotor = hardwareMap.get(DcMotor.class, "RR Motor");
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         Servo1 = hardwareMap.get(Servo.class, "Servo1");
+        intakeLift = hardwareMap.get(Servo.class, "IntakeLift");
 
         // Initialize variables
         robotCanKeepGoing = true;
@@ -93,26 +95,33 @@ public class JediMasterTeleOp extends LinearOpMode {
             //TODO: Do stuff
             while (opModeIsActive()) {
                 //right trigger is to accelerate past the maximumHalfSpeed
-                currentRobotSpeed = maximumHalfSpeed + maximumHalfSpeed * gamepad1.right_trigger;
+                currentRobotSpeed = maximumHalfSpeed + maximumHalfSpeed * gamepad1.left_trigger;
                 forwardAmount = gamepad1.left_stick_y * currentRobotSpeed;
                 strafeAmount = gamepad1.left_stick_x * currentRobotSpeed;
                 turnAmount = gamepad1.right_stick_x * currentRobotSpeed;
-                leftFrontMotorVelocity = forwardAmount + strafeAmount;
-                leftRearMotorVelocity = forwardAmount - strafeAmount;
-                rightFrontMotorVelocity = forwardAmount - strafeAmount;
-                rightRearMotorVelocity = forwardAmount + strafeAmount;
+                //Strafe and Turn:
+                leftFrontMotorVelocity = (forwardAmount + strafeAmount - turnAmount) / 3;
+                leftRearMotorVelocity = (forwardAmount - strafeAmount - turnAmount) / 3;
+                rightFrontMotorVelocity = (forwardAmount - strafeAmount + turnAmount) / 3;
+                rightRearMotorVelocity = (forwardAmount + strafeAmount + turnAmount) / 3;
                 ((DcMotorEx) LFMotor).setVelocity(leftFrontMotorVelocity);
                 ((DcMotorEx) LRMotor).setVelocity(leftRearMotorVelocity);
                 ((DcMotorEx) RFMotor).setVelocity(rightFrontMotorVelocity);
                 ((DcMotorEx) RRMotor).setVelocity(rightRearMotorVelocity);
 
+
                 if (gamepad1.dpad_down) {
                     Servo1.setPosition(0);
                 } else if (gamepad1.dpad_up) {
                     Servo1.setPosition(1);
-                } else {
-                    // Chill!
                 }
+
+                if (gamepad1.dpad_left) {
+                    intakeLift.setPosition(0);
+                } else if (gamepad1.dpad_right) {
+                    intakeLift.setPosition(1);
+                }
+
                 telemetry.addData("ServoPosition", Servo1.getPosition());
                 telemetry.addData("LF Velocity", ((DcMotorEx) LFMotor).getVelocity());
                 telemetry.addData("RF Velocity", ((DcMotorEx) RFMotor).getVelocity());
