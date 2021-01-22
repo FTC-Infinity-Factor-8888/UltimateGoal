@@ -97,10 +97,10 @@ public class JediMasterTeleOp extends LinearOpMode {
                 forwardAmount = gamepad1.left_stick_y * currentRobotSpeed;
                 strafeAmount = gamepad1.left_stick_x * currentRobotSpeed;
                 turnAmount = gamepad1.right_stick_x * currentRobotSpeed;
-                leftFrontMotorVelocity = forwardAmount - strafeAmount;
-                leftRearMotorVelocity = forwardAmount + strafeAmount;
-                rightFrontMotorVelocity = forwardAmount + strafeAmount;
-                rightRearMotorVelocity = forwardAmount - strafeAmount;
+                leftFrontMotorVelocity = forwardAmount + strafeAmount;
+                leftRearMotorVelocity = forwardAmount - strafeAmount;
+                rightFrontMotorVelocity = forwardAmount - strafeAmount;
+                rightRearMotorVelocity = forwardAmount + strafeAmount;
                 ((DcMotorEx) LFMotor).setVelocity(leftFrontMotorVelocity);
                 ((DcMotorEx) LRMotor).setVelocity(leftRearMotorVelocity);
                 ((DcMotorEx) RFMotor).setVelocity(rightFrontMotorVelocity);
