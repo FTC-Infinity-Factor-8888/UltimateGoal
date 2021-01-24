@@ -20,6 +20,7 @@ public class JediMasterTeleOp extends LinearOpMode {
     private DcMotor RFMotor;
     private DcMotor LRMotor;
     private DcMotor RRMotor;
+    private DcMotor intakeWheels;
     private BNO055IMU imu;
     private Servo Servo1;
     private Servo intakeLift;
@@ -46,6 +47,8 @@ public class JediMasterTeleOp extends LinearOpMode {
     private int maximumRobotSpeed = -2350;
     private int maximumHalfSpeed = maximumRobotSpeed/2;
 
+    private float intakeStepAmount = 0.05f;
+
     /**
      * This function is executed when this Op Mode is selected from the Driver Station.
      */
@@ -63,6 +66,7 @@ public class JediMasterTeleOp extends LinearOpMode {
         RFMotor = hardwareMap.get(DcMotor.class, "RF Motor");
         LRMotor = hardwareMap.get(DcMotor.class, "LR Motor");
         RRMotor = hardwareMap.get(DcMotor.class, "RR Motor");
+        intakeWheels = hardwareMap.get(DcMotor.class, "IntakeWheels");
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         Servo1 = hardwareMap.get(Servo.class, "Servo1");
         intakeLift = hardwareMap.get(Servo.class, "IntakeLift");
@@ -90,9 +94,9 @@ public class JediMasterTeleOp extends LinearOpMode {
         double forwardAmount;
         double strafeAmount;
         double turnAmount;
+        double intakePosition = 0;
 
         if (opModeIsActive()) {
-            //TODO: Do stuff
             while (opModeIsActive()) {
                 //right trigger is to accelerate past the maximumHalfSpeed
                 currentRobotSpeed = maximumHalfSpeed + maximumHalfSpeed * gamepad1.left_trigger;
@@ -109,7 +113,6 @@ public class JediMasterTeleOp extends LinearOpMode {
                 ((DcMotorEx) RFMotor).setVelocity(rightFrontMotorVelocity);
                 ((DcMotorEx) RRMotor).setVelocity(rightRearMotorVelocity);
 
-
                 if (gamepad1.dpad_down) {
                     Servo1.setPosition(0);
                 } else if (gamepad1.dpad_up) {
@@ -117,10 +120,31 @@ public class JediMasterTeleOp extends LinearOpMode {
                 }
 
                 if (gamepad1.dpad_left) {
-                    intakeLift.setPosition(0);
+                    intakePosition -= intakeStepAmount;
+                    if (intakePosition < 0) {
+                        intakePosition = 0;
+                    }
                 } else if (gamepad1.dpad_right) {
-                    intakeLift.setPosition(1);
+                    intakePosition += intakeStepAmount;
+                    if (intakePosition > 1) {
+                        intakePosition = 1;
+                    }
                 }
+                intakeLift.setPosition(intakePosition);
+
+                // y button is intake forward
+                // x button is intake stop
+                // a button is intake reverse
+                if (gamepad1.y) {
+                    intakeWheels.setPower(1);
+                }
+                else if (gamepad1.x) {
+                    intakeWheels.setPower(0);
+                }
+                else if (gamepad1.a) {
+                    intakeWheels.setPower(-1);
+                }
+
 
                 telemetry.addData("ServoPosition", Servo1.getPosition());
                 telemetry.addData("LF Velocity", ((DcMotorEx) LFMotor).getVelocity());
@@ -159,6 +183,7 @@ public class JediMasterTeleOp extends LinearOpMode {
         LRMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         RFMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         RRMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        intakeWheels.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
     /**
