@@ -12,6 +12,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+
+import java.util.List;
 
 @Autonomous(name = "JediMasterAutonomous (Blocks to Java)")
 public class JediMasterAutonomous extends LinearOpMode {
@@ -23,15 +26,18 @@ public class JediMasterAutonomous extends LinearOpMode {
     private DcMotor RRMotor;
     private BNO055IMU imu;
 
+    private Robot robot;
+    private ObjectDetector ringDetector;
+
     boolean robotCanKeepGoing;
-    double leftRearMotorPower;
-    double StartLine;
+    double startLine = 1; //default to the first start line
+    double targetZone = 1; //if countTheRings doesn't see anything, the value is target zone 1
     double desiredHeading;
     double leftFrontMotorPower;
+    double leftRearMotorPower;
     double rightFrontMotorPower;
-    double TargetZone;
-    float CurrentHeading;
     double rightRearMotorPower;
+    float CurrentHeading;
     double Delta;
     double distanceInTicks;
     int leftFrontTargetPosition;
@@ -52,8 +58,8 @@ public class JediMasterAutonomous extends LinearOpMode {
      * Describe this function...
      */
     private void AllSix() {
-        if (StartLine == 1) {
-            if (TargetZone == 1) {
+        if (startLine == 1) {
+            if (targetZone == 1) {
                 //1a
                 drive(53);
                 Turn(25);
@@ -64,7 +70,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 Hold(0);
                 drive(21);
                 Hold(0);
-            } else if (TargetZone == 2) {
+            } else if (targetZone == 2) {
                 //1b
                 drive(80);
                 Turn(-30);
@@ -86,7 +92,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 Hold(0);
             }
         } else {
-            if (TargetZone == 1) {
+            if (targetZone == 1) {
                 //2a
                 drive(53);
                 Turn(60);
@@ -95,7 +101,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 Turn(0);
                 drive(25);
                 Hold(0);
-            } else if (TargetZone == 2) {
+            } else if (targetZone == 2) {
                 //2b
                 drive(80);
                 Turn(30);
@@ -122,6 +128,8 @@ public class JediMasterAutonomous extends LinearOpMode {
      */
     @Override
     public void runOpMode() {
+        robot = new Robot();
+        robot.setHardwareMap(hardwareMap);
         double ticksPerMotorRev;
         double WheelCircumferenceInInches;
 
@@ -146,12 +154,25 @@ public class JediMasterAutonomous extends LinearOpMode {
         HoldTime = 2000;
         initializeMotors();
         initializeIMU();
+        ringDetector = new ObjectDetector();
+        try {
+            ringDetector.init(robot);
+        }
+        catch (IllegalStateException e) {
+            telemetry.addData("ERROR", e.getLocalizedMessage());
+            telemetry.update();
+            stop();
+            // TODO: DO NOT ABORT for competition
+        }
         //Make robot legal-size by raising intake
         intakeLift.setPosition(1.0);
-        MatchSpecificUI();
         telemetry.addData("Status", "Ready to start - v1.1.6");
         telemetry.update();
-        waitForStart();
+        while (!isStarted() && opModeIsActive()) {
+            // Keep checking rings until start is pressed. Last result wins.
+            countTheRings();
+            idle();
+        }
         if (opModeIsActive()) {
             //TODO: make sure we check opModeIsActive
 
@@ -201,28 +222,60 @@ public class JediMasterAutonomous extends LinearOpMode {
     private void MatchSpecificUI() {
         boolean UIDone;
 
-        StartLine = 1;
-        TargetZone = 1;
+        startLine = 1;
+        targetZone = 1;
         UIDone = false;
         while (!(UIDone || opModeIsActive())) {
             if (gamepad1.dpad_left) {
-                StartLine = 1;
+                startLine = 1;
             } else if (gamepad1.dpad_right) {
-                StartLine = 2;
+                startLine = 2;
             }
             if (gamepad1.a) {
-                TargetZone = 1;
+                targetZone = 1;
             } else if (gamepad1.b) {
-                TargetZone = 2;
+                targetZone = 2;
             } else if (gamepad1.y) {
-                TargetZone = 3;
+                targetZone = 3;
             }
             if (gamepad1.left_bumper && gamepad1.right_bumper) {
                 UIDone = true;
             }
             telemetry.update();
-            telemetry.addData("Start Line", StartLine);
-            telemetry.addData("Target Zone", TargetZone);
+            telemetry.addData("Start Line", startLine);
+            telemetry.addData("Target Zone", targetZone);
+        }
+    }
+
+    private void countTheRings() {
+        // look for the rings
+        List<Recognition> updatedRecognitions = ringDetector.getUpdatedRecognitions();
+        if (updatedRecognitions != null) {
+            targetZone = 1;
+            telemetry.addData("# Object Detected", updatedRecognitions.size());
+            // step through the list of recognitions and display boundary info.
+            int i = 0;
+            for (Recognition recognition : updatedRecognitions) {
+                i += 1;
+                String label = recognition.getLabel();
+                // TODO: Set the appropriate Target Zone
+
+                if (ringDetector.QUAD.equals(label)) {
+                    targetZone = 3;
+                }
+                else if (ringDetector.SINGLE.equals(label)) {
+                    targetZone = 2;
+                }
+
+                telemetry.addData(String.format("label (%d)", i), label);
+                telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
+                        recognition.getLeft(), recognition.getTop());
+                telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
+                        recognition.getRight(), recognition.getBottom());
+            }
+            telemetry.addData("StartLine", startLine);
+            telemetry.addData("TargetZone", targetZone);
+            telemetry.update();
         }
     }
 
