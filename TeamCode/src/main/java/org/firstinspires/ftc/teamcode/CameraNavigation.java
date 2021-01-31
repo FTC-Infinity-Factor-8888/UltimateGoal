@@ -87,7 +87,7 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
  */
 
 
-public class CameraNavigation {
+public class CameraNavigation extends LinearOpMode {
 
     // IMPORTANT: If you are using a USB WebCam, you must select CAMERA_CHOICE = BACK; and PHONE_IS_PORTRAIT = false;
     private static final VuforiaLocalizer.CameraDirection CAMERA_CHOICE = BACK;
@@ -275,8 +275,10 @@ public class CameraNavigation {
         }
 
     }
+    public void runOpMode() {
 
-
+    }
+public void edithere(VuforiaTrackables targetsUltimateGoal, List<VuforiaTrackable> allTrackables) {
 
         // WARNING:
         // In this sample, we do not wait for PLAY to be pressed.  Target Tracking is started immediately when INIT is pressed.
@@ -291,7 +293,8 @@ public class CameraNavigation {
         // Tap the preview window to receive a fresh image.
 
         targetsUltimateGoal.activate();
-        while (!isStopRequested()) {
+        while (true) {
+            //TODO: fix while conditions
 
             // check all the trackable targets to see which one (if any) is visible.
             targetVisible = false;
@@ -328,6 +331,7 @@ public class CameraNavigation {
         }
 
         // Disable Tracking when we are done;
-        targetsUltimateGoal.deactivate();
+        //TODO: restore this
+        // targetsUltimateGoal.deactivate();
     }
 }

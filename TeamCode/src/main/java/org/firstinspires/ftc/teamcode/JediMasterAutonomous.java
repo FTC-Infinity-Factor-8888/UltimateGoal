@@ -59,6 +59,8 @@ public class JediMasterAutonomous extends LinearOpMode {
     double holdSpeed;
     double holdTime;
 
+    private boolean stopThread = false;
+
     /**
      * Describe this function...
      */
@@ -165,22 +167,32 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
         catch (IllegalStateException e) {
             telemetry.addData("ERROR", e.getLocalizedMessage());
-            telemetry.update();
-            stop();
-            // TODO: DO NOT ABORT for competition
+            telemetry.addData("Solution", "Diverting to TargetZone 1");
         }
         //Make robot legal-size by raising intake
         intakeLift.setPosition(1.0);
         telemetry.addData("Status", "Ready to start - v1.1.6");
         telemetry.update();
-        while (!isStarted() && opModeIsActive()) {
-            // Keep checking rings until start is pressed. Last result wins.
-            countTheRings();
-            idle();
-        }
-        if (opModeIsActive()) {
-            //TODO: make sure we check opModeIsActive
 
+        waitForStart();
+
+        Runnable lookForStop = new Runnable() {
+            @Override
+            public void run() {
+                //Check to see if the opMode is running. Aborts when not running.
+                while (opModeIsActive() || stopThread) {
+                    idle();
+                }
+                stop();
+            }
+        };
+        Thread background = new Thread(lookForStop);
+
+        if (opModeIsActive()) {
+            background.start();
+
+            //TODO: make sure we check opModeIsActive
+            countTheRings();
             // Put run blocks here.
             intakeLift.setPosition(0.9);
             sleep(1000);
@@ -191,6 +203,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         telemetry.addData("Current Heading", currentHeading);
         telemetry.update();
         sleep(5000);
+        stopThread = true;
     }
 
     /**

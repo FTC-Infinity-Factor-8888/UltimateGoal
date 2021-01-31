@@ -97,7 +97,8 @@ public class ObjectDetector {
             // to artificially zoom in to the center of image.  For best results, the "aspectRatio" argument
             // should be set to the value of the images used to create the TensorFlow Object Detection model
             // (typically 16/9).
-            tfod.setZoom(2.5, 16.0 / 9.0);
+            tfod.setZoom(1.0, 16.0 / 9.0);
+            tfod.setClippingMargins(10, 200, 10, 0);
         } else {
             throw new IllegalStateException("tfod did NOT start");
         }
