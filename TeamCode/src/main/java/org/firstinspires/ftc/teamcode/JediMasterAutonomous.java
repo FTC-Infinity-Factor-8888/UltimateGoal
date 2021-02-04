@@ -183,7 +183,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 while (opModeIsActive() || stopThread) {
                     idle();
                 }
-                stop();
+                public final void requestOpModeStop();
             }
         };
         Thread background = new Thread(lookForStop);
