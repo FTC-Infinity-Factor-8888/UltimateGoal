@@ -171,7 +171,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
         //Make robot legal-size by raising intake
         intakeLift.setPosition(1.0);
-        telemetry.addData("Status", "Ready to start - v1.1.6");
+        telemetry.addData("Status", "Ready to start - v1.2.1");
         telemetry.update();
 
         waitForStart();
@@ -183,13 +183,13 @@ public class JediMasterAutonomous extends LinearOpMode {
                 while (opModeIsActive() || stopThread) {
                     idle();
                 }
-                public final void requestOpModeStop();
+                requestOpModeStop();
             }
         };
         Thread background = new Thread(lookForStop);
 
         if (opModeIsActive()) {
-            background.start();
+            //background.start();   [Thread has other consequences]
 
             //TODO: make sure we check opModeIsActive
             countTheRings();
@@ -291,6 +291,12 @@ public class JediMasterAutonomous extends LinearOpMode {
                 telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
                         recognition.getRight(), recognition.getBottom());
             }
+
+            if(targetZone == 1) {
+                //Check OpenCV to see if it sees orange
+
+            }
+
             telemetry.addData("StartLine", startLine);
             telemetry.addData("TargetZone", targetZone);
             telemetry.update();
@@ -394,6 +400,10 @@ public class JediMasterAutonomous extends LinearOpMode {
         LRMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         RFMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         RRMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        if(!opModeIsActive()) {
+            requestOpModeStop();
+        }
     }
 
     /**

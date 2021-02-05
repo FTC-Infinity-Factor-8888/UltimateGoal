@@ -62,14 +62,18 @@ public class EasyOpenCVExample extends LinearOpMode
             @Override
             public void onOpened()
             {
-                webcam.startStreaming(320,240, OpenCvCameraRotation.UPRIGHT);
+                webcam.startStreaming(1920,1080, OpenCvCameraRotation.UPRIGHT);
             }
         });
 
         waitForStart();
 
+        webcam.closeCameraDevice();
+        webcam.openCameraDevice();
+        webcam.startStreaming(1920,1080, OpenCvCameraRotation.UPRIGHT);
         while (opModeIsActive())
         {
+            telemetry.addData("average", String.format("Y %d, Cr %d, Cb %d", pipeline.getY(), pipeline.getCr(), pipeline.getCb()));
             telemetry.addData("Analysis", pipeline.getAnalysis());
             telemetry.addData("Position", pipeline.position);
             telemetry.update();
@@ -100,13 +104,17 @@ public class EasyOpenCVExample extends LinearOpMode
         /*
          * The core values which define the location and size of the sample regions
          */
-        static final Point REGION1_TOPLEFT_ANCHOR_POINT = new Point(181,98);
+        // view from startLine1
+        // topLeft = (1500, 730)
+        // width = 320
+        // height = 250
+        static final Point REGION1_TOPLEFT_ANCHOR_POINT = new Point(420,730);
 
-        static final int REGION_WIDTH = 35;
-        static final int REGION_HEIGHT = 25;
+        static final int REGION_WIDTH = 320;
+        static final int REGION_HEIGHT = 250;
 
         final int FOUR_RING_THRESHOLD = 150;
-        final int ONE_RING_THRESHOLD = 135;
+        final int ONE_RING_THRESHOLD = 130;
 
         Point region1_pointA = new Point(
                 REGION1_TOPLEFT_ANCHOR_POINT.x,
@@ -180,6 +188,15 @@ public class EasyOpenCVExample extends LinearOpMode
         public int getAnalysis()
         {
             return avg1;
+        }
+        public int getY() {
+            return (int) Core.mean(region1_Cb).val[0];
+        }
+        public int getCr() {
+            return (int) Core.mean(region1_Cb).val[1];
+        }
+        public int getCb() {
+            return (int) Core.mean(region1_Cb).val[2];
         }
     }
 }
