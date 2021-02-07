@@ -164,7 +164,7 @@ public class EasyOpenCVExample extends LinearOpMode
                     region1_pointA, // First point which defines the rectangle
                     region1_pointB, // Second point which defines the rectangle
                     BLUE, // The color the rectangle is drawn in
-                    2); // Thickness of the rectangle lines
+                    10); // Thickness of the rectangle lines
 
             position = RingPosition.FOUR; // Record our analysis
             if(avg1 > FOUR_RING_THRESHOLD){
@@ -175,13 +175,13 @@ public class EasyOpenCVExample extends LinearOpMode
                 position = RingPosition.NONE;
             }
 
-            Imgproc.rectangle(
+            /*Imgproc.rectangle(
                     input, // Buffer to draw on
                     region1_pointA, // First point which defines the rectangle
                     region1_pointB, // Second point which defines the rectangle
                     GREEN, // The color the rectangle is drawn in
                     -1); // Negative thickness means solid fill
-
+            */
             return input;
         }
 
