@@ -36,6 +36,7 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.openftc.easyopencv.OpenCvCameraFactory;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -129,6 +130,9 @@ public class ObjectDetector {
         catch (Exception e) {
             throw new IllegalStateException("Vuforia key NOT found", e);
         }
+
+        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        int[] viewportContainerIds = OpenCvCameraFactory.getInstance().splitLayoutForMultipleViewports(cameraMonitorViewId, 2, OpenCvCameraFactory.ViewportSplitMethod.VERTICALLY);
 
         /*
          * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
