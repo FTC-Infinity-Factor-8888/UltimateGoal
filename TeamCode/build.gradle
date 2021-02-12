@@ -24,4 +24,8 @@ dependencies {
 
 dependencies {
     implementation 'org.openftc:easyopencv:1.4.4'
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> b05bb44073cad0adc144d890aa6ea9b6b2b04dbb
