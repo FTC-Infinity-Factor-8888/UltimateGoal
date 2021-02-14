@@ -223,6 +223,12 @@ public class ObjectDetector {
         // topLeft = (1500, 730)
         // width = 320
         // height = 250
+
+        /*
+         * we have determined the actual screen size to be 800x * 448y
+         * 29-30 fps
+         * We want to look in either the lower-left-corner, or the lower-right-corner for the ring(s)
+         */
         static final Point REGION1_TOPLEFT_ANCHOR_POINT = new Point(420,730);
 
         static final int REGION_WIDTH = 320;
