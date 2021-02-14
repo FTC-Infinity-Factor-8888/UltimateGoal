@@ -171,7 +171,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
         //Make robot legal-size by raising intake
         intakeLift.setPosition(1.0);
-        telemetry.addData("Status", "Ready to start - v1.2.1");
+        telemetry.addData("Status", "Ready to start - v1.2.2");
         telemetry.update();
 
         waitForStart();
@@ -193,6 +193,8 @@ public class JediMasterAutonomous extends LinearOpMode {
 
             //TODO: make sure we check opModeIsActive
             countTheRings();
+            sleep(10000);
+            stop();
             // Put run blocks here.
             intakeLift.setPosition(0.9);
             sleep(1000);
@@ -290,11 +292,16 @@ public class JediMasterAutonomous extends LinearOpMode {
                         recognition.getLeft(), recognition.getTop());
                 telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
                         recognition.getRight(), recognition.getBottom());
+
+                // ringdetector., initOpenCv, turn off tFod, if openCv Sees ring
             }
-
+            // ringdetector., initOpenCv, turn off tFod, if openCv Sees ring
             if(targetZone == 1) {
-                //Check OpenCV to see if it sees orange
-
+                ringDetector.initOpenCv();
+                ringDetector.stopTfod();
+                if(ringDetector.doYouSeeARing() == true) {
+                    targetZone = 2;
+                }
             }
 
             telemetry.addData("StartLine", startLine);

@@ -185,6 +185,9 @@ public class ObjectDetector {
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, QUAD, SINGLE);
     }
 
+    /**
+     * Initializes OpenCv using the split viewport from Vuforia
+     */
     public void initOpenCv() {
         openCvPassthrough.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
             @Override
@@ -260,6 +263,7 @@ public class ObjectDetector {
         @Override
         public void init(Mat firstFrame)
         {
+            System.out.println(firstFrame.toString());
             inputToCb(firstFrame);
 
             region1_Cb = Cb.submat(new Rect(region1_pointA, region1_pointB));
