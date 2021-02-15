@@ -33,7 +33,6 @@ import java.io.FileReader;
 public class OpenCvAndVuforiaOnSameCameraExample extends LinearOpMode
 {
     private static final String VUFORIA_LICENSE_FILE = "/sdcard/data/vuforia-license.txt";
-
     VuforiaLocalizer vuforia = null;
     OpenCvCamera openCvPassthrough;
 
@@ -68,6 +67,7 @@ public class OpenCvAndVuforiaOnSameCameraExample extends LinearOpMode
         // Create a Vuforia passthrough "virtual camera"
         openCvPassthrough = OpenCvCameraFactory.getInstance().createVuforiaPassthrough(vuforia, parameters, viewportContainerIds[1]);
 
+        final UselessColorBoxDrawingPipeline pipeline = new UselessColorBoxDrawingPipeline(new Scalar(255,0,0,255));
         openCvPassthrough.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
         {
             @Override
@@ -79,7 +79,7 @@ public class OpenCvAndVuforiaOnSameCameraExample extends LinearOpMode
                 // issues on some devices, though, so if you experience issues you may wish to disable it.
                 openCvPassthrough.setViewportRenderer(OpenCvCamera.ViewportRenderer.GPU_ACCELERATED);
                 openCvPassthrough.setViewportRenderingPolicy(OpenCvCamera.ViewportRenderingPolicy.OPTIMIZE_VIEW);
-                openCvPassthrough.setPipeline(new UselessColorBoxDrawingPipeline(new Scalar(255,0,0,255)));
+                openCvPassthrough.setPipeline(pipeline);
 
                 // We don't get to choose resolution, unfortunately. The width and height parameters
                 // are entirely ignored when using Vuforia passthrough mode. However, they are left
@@ -89,10 +89,14 @@ public class OpenCvAndVuforiaOnSameCameraExample extends LinearOpMode
             }
         });
 
+        telemetry.addData("Screen Size", String.format("(%d, %d)", pipeline.cols(), pipeline.rows()));
+        telemetry.update();
+
         waitForStart();
 
         while (opModeIsActive())
         {
+            telemetry.addData("Screen Size", String.format("(%d, %d)", pipeline.cols(), pipeline.rows()));
             telemetry.addData("Passthrough FPS", openCvPassthrough.getFps());
             telemetry.addData("Frame count", openCvPassthrough.getFrameCount());
             telemetry.update();
@@ -105,22 +109,34 @@ public class OpenCvAndVuforiaOnSameCameraExample extends LinearOpMode
     {
         Scalar color;
 
+        private volatile int cols = 0;
+        private volatile int rows = 0;
+
         UselessColorBoxDrawingPipeline(Scalar color)
         {
             this.color = color;
         }
 
+        public int cols() {
+            return cols;
+        }
+        public int rows() {
+            return rows;
+        }
+
         @Override
         public Mat processFrame(Mat input)
         {
+            cols = input.cols();
+            rows = input.rows();
             Imgproc.rectangle(
                     input,
                     new Point(
-                            input.cols()/4,
-                            input.rows()/4),
+                            cols/4,
+                            rows/4),
                     new Point(
-                            input.cols()*(3f/4f),
-                            input.rows()*(3f/4f)),
+                            cols*(3f/4f),
+                            rows*(3f/4f)),
                     color, 4);
 
             return input;

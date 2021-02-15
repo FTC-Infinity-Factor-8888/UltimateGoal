@@ -22,7 +22,7 @@ public class JediMasterTeleOp extends LinearOpMode {
     private DcMotor RRMotor;
     private DcMotor intakeWheels;
     private BNO055IMU imu;
-    private Servo Servo1;
+    private Servo dumpBed;
     private Servo intakeLift;
 
     double leftFrontMotorVelocity;
@@ -44,8 +44,8 @@ public class JediMasterTeleOp extends LinearOpMode {
     double RightSpeed;
     double HoldSpeed;
     //Maximum amount of ticks/second, and also compensate for joystick direction.
-    private int maximumRobotSpeed = -2350;
-    private int maximumHalfSpeed = maximumRobotSpeed/2;
+    private int maximumRobotTps = -2350;
+    private int maximumHalfTps = maximumRobotTps /2;
 
     private float intakeStepAmount = 0.05f;
 
@@ -68,7 +68,7 @@ public class JediMasterTeleOp extends LinearOpMode {
         RRMotor = hardwareMap.get(DcMotor.class, "RR Motor");
         intakeWheels = hardwareMap.get(DcMotor.class, "IntakeWheels");
         imu = hardwareMap.get(BNO055IMU.class, "imu");
-        Servo1 = hardwareMap.get(Servo.class, "Servo1");
+        dumpBed = hardwareMap.get(Servo.class, "Servo1");
         intakeLift = hardwareMap.get(Servo.class, "IntakeLift");
 
         // Initialize variables
@@ -86,37 +86,49 @@ public class JediMasterTeleOp extends LinearOpMode {
         StrafeHeading = CurrentHeading;
         initializeMotors();
         initializeIMU();
-        telemetry.addData("Status", "Ready to start - v5");
+        telemetry.addData("Status", "Ready to start - v.6.0");
         telemetry.update();
         waitForStart();
 
-        double currentRobotSpeed;
-        double forwardAmount;
-        double strafeAmount;
-        double turnAmount;
+        double currentRobotTps;
         double intakePosition = 0;
 
         if (opModeIsActive()) {
             while (opModeIsActive()) {
+
+                double forwardInput = gamepad1.left_stick_y;
+                double strafeInput = gamepad1.left_stick_x;
+                double turnInput = gamepad1.right_stick_x;
+                double accelerator = gamepad1.left_trigger;
+
                 //right trigger is to accelerate past the maximumHalfSpeed
-                currentRobotSpeed = maximumHalfSpeed + maximumHalfSpeed * gamepad1.left_trigger;
-                forwardAmount = gamepad1.left_stick_y * currentRobotSpeed;
-                strafeAmount = gamepad1.left_stick_x * currentRobotSpeed;
-                turnAmount = gamepad1.right_stick_x * currentRobotSpeed;
+                currentRobotTps = maximumHalfTps + maximumHalfTps * accelerator;
                 //Strafe and Turn:
-                leftFrontMotorVelocity = (forwardAmount + strafeAmount - turnAmount) / 3;
-                leftRearMotorVelocity = (forwardAmount - strafeAmount - turnAmount) / 3;
-                rightFrontMotorVelocity = (forwardAmount - strafeAmount + turnAmount) / 3;
-                rightRearMotorVelocity = (forwardAmount + strafeAmount + turnAmount) / 3;
-                ((DcMotorEx) LFMotor).setVelocity(leftFrontMotorVelocity);
-                ((DcMotorEx) LRMotor).setVelocity(leftRearMotorVelocity);
-                ((DcMotorEx) RFMotor).setVelocity(rightFrontMotorVelocity);
-                ((DcMotorEx) RRMotor).setVelocity(rightRearMotorVelocity);
+                leftFrontMotorVelocity = (forwardInput + strafeInput - turnInput);
+                leftRearMotorVelocity = (forwardInput - strafeInput - turnInput);
+                rightFrontMotorVelocity = (forwardInput - strafeInput + turnInput);
+                rightRearMotorVelocity = (forwardInput + strafeInput + turnInput);
+
+                double leftMax = Math.max(Math.abs(leftFrontMotorVelocity), Math.abs(leftRearMotorVelocity));
+                double rightMax = Math.max(Math.abs(rightFrontMotorVelocity), Math.abs(rightRearMotorVelocity));
+                double max = Math.max (leftMax, rightMax);
+
+                if(max > 1.0) {
+                    leftFrontMotorVelocity /= max;
+                    leftRearMotorVelocity /= max;
+                    rightFrontMotorVelocity /= max;
+                    rightRearMotorVelocity /= max;
+                }
+
+                ((DcMotorEx) LFMotor).setVelocity(leftFrontMotorVelocity * currentRobotTps);
+                ((DcMotorEx) LRMotor).setVelocity(leftRearMotorVelocity * currentRobotTps);
+                ((DcMotorEx) RFMotor).setVelocity(rightFrontMotorVelocity * currentRobotTps);
+                ((DcMotorEx) RRMotor).setVelocity(rightRearMotorVelocity * currentRobotTps);
 
                 if (gamepad1.dpad_down) {
-                    Servo1.setPosition(0);
+                    dumpBed.setPosition(0);
                 } else if (gamepad1.dpad_up) {
-                    Servo1.setPosition(1);
+                    dumpBed.setPosition(1);
                 }
 
                 if (gamepad1.dpad_left) {
@@ -146,12 +158,12 @@ public class JediMasterTeleOp extends LinearOpMode {
                 }
 
 
-                telemetry.addData("ServoPosition", Servo1.getPosition());
+                telemetry.addData("ServoPosition", dumpBed.getPosition());
                 telemetry.addData("LF Velocity", ((DcMotorEx) LFMotor).getVelocity());
                 telemetry.addData("RF Velocity", ((DcMotorEx) RFMotor).getVelocity());
                 telemetry.addData("LR Velocity", ((DcMotorEx) LRMotor).getVelocity());
                 telemetry.addData("RR Velocity", ((DcMotorEx) RRMotor).getVelocity());
-                telemetry.addData("RightTrigger", gamepad1.right_trigger);
+                telemetry.addData("Accelerator", accelerator);
                 telemetry.update();
             }
 
@@ -169,12 +181,14 @@ public class JediMasterTeleOp extends LinearOpMode {
      * Configure motor direction and modes.
      */
     private void initializeMotors() {
-        RFMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        RRMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         LFMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         LRMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RFMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         RRMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        RFMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        RRMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
         LFMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         LRMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         RFMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
