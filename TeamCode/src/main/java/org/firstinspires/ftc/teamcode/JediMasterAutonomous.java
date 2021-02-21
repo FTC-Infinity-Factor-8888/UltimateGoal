@@ -163,12 +163,16 @@ public class JediMasterAutonomous extends LinearOpMode {
         initializeIMU();
         ringDetector = new ObjectDetector();
         try {
+            System.out.println("Starting camera initialization");
             ringDetector.init(robot);
         }
         catch (IllegalStateException e) {
             telemetry.addData("ERROR", e.getLocalizedMessage());
             telemetry.addData("Solution", "Diverting to TargetZone 1");
         }
+        System.out.println("Vuforia initialized, starting OpenCV next");
+        ringDetector.initOpenCv();
+
         //Make robot legal-size by raising intake
         intakeLift.setPosition(1.0);
         telemetry.addData("Status", "Ready to start - v1.2.2");
@@ -292,18 +296,24 @@ public class JediMasterAutonomous extends LinearOpMode {
                         recognition.getLeft(), recognition.getTop());
                 telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
                         recognition.getRight(), recognition.getBottom());
-
-                // ringdetector., initOpenCv, turn off tFod, if openCv Sees ring
             }
-            // ringdetector., initOpenCv, turn off tFod, if openCv Sees ring
-            if(targetZone == 1) {
-                ringDetector.initOpenCv();
-                ringDetector.stopTfod();
-                if(ringDetector.doYouSeeARing() == true) {
-                    targetZone = 2;
+        }
+        // ringdetector., initOpenCv, turn off tFod, if openCv Sees ring
+        if(targetZone == 1) {
+            //ringDetector.initOpenCv();
+            //ringDetector.stopTfod();
+            telemetry.addData("avg1", ringDetector.getAvg1());
+            telemetry.addData("avg2", ringDetector.getAvg2());
+            int boxSeen = ringDetector.whichBoxSeen();
+            if(boxSeen != 0) {
+                targetZone = 2;
+                if(boxSeen == 1) {
+                    startLine = 2;
+                }
+                else if(boxSeen == 2) {
+                    startLine = 1;
                 }
             }
-
             telemetry.addData("StartLine", startLine);
             telemetry.addData("TargetZone", targetZone);
             telemetry.update();

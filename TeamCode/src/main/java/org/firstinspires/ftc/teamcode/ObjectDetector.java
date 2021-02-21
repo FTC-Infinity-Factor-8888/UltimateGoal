@@ -96,12 +96,14 @@ public class ObjectDetector {
     }
 
     public void init(Robot robot) {
+        System.out.println("Initializing ObjectDetector");
+
         hardwareMap = robot.getHardwareMap();
 
         // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
         // first.
         initVuforia();
-        initTfod();
+        //initTfod();
 
         /**
          * Activate TensorFlow Object Detection before we wait for the start command.
@@ -138,8 +140,14 @@ public class ObjectDetector {
         }
     }
 
-    public boolean doYouSeeARing() {
-        return pipeline.isRingSeen;
+    /**
+     * Tells you which box sees a ring
+     * Or if no ring is seen
+     *
+     * @return 1 if ring is in box one, 2 if box is in box 2, 0 if there is no ring visible
+     */
+    public int whichBoxSeen() {
+        return pipeline.boxSeen;
     }
 
     /**
@@ -160,8 +168,10 @@ public class ObjectDetector {
          * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
          */
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(viewportContainerIds[0]);
+        //VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
 
         parameters.vuforiaLicenseKey = licenseKey;
+        parameters.cameraDirection   = VuforiaLocalizer.CameraDirection.BACK;
         parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam");
 
         //  Instantiate the Vuforia engine
@@ -171,6 +181,8 @@ public class ObjectDetector {
 
         // Create a Vuforia passthrough virtual camera.
         openCvPassthrough = OpenCvCameraFactory.getInstance().createVuforiaPassthrough(vuforia, parameters, viewportContainerIds[1]);
+
+        System.out.println("Done with Vuforia initialization");
     }
 
     /**
@@ -189,6 +201,7 @@ public class ObjectDetector {
      * Initializes OpenCv using the split viewport from Vuforia
      */
     public void initOpenCv() {
+        System.out.println("Starting OpenCV pipeline");
         openCvPassthrough.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
             @Override
             public void onOpened() {
@@ -198,7 +211,7 @@ public class ObjectDetector {
                 // very CPU-taxing to rotate in software. GPU acceleration has been observed to cause
                 // issues on some devices, though, so if you experience issues you may wish to disable it.
                 openCvPassthrough.setViewportRenderer(OpenCvCamera.ViewportRenderer.GPU_ACCELERATED);
-                openCvPassthrough.setViewportRenderingPolicy(OpenCvCamera.ViewportRenderingPolicy.OPTIMIZE_VIEW);
+                //openCvPassthrough.setViewportRenderingPolicy(OpenCvCamera.ViewportRenderingPolicy.OPTIMIZE_VIEW);
                 openCvPassthrough.setPipeline(pipeline);
 
                 // We don't get to choose resolution, unfortunately. The width and height parameters
@@ -259,11 +272,12 @@ public class ObjectDetector {
         Mat region2_Cb;
         Mat YCrCb = new Mat();
         Mat Cb = new Mat();
-        int avg1;
-        int avg2;
+        private volatile int avg1;
+        private volatile int avg2;
 
         // Volatile since accessed by OpMode thread w/o synchronization
-        private volatile boolean isRingSeen = false;
+        //private volatile boolean isRingSeen = false;
+        private volatile int boxSeen = 0; //0 means no rings seen
 
         /*
          * This function takes the RGB frame, converts to YCrCb,
@@ -283,21 +297,25 @@ public class ObjectDetector {
             int margin = width / 40;
             int halfWidth = width / 2;
             int halfHeight = height / 2;
+            int quarterHeight = halfHeight / 2;
 
             box1_pointA = new Point(
-                    margin, halfHeight);
+                    margin * 6, halfHeight + quarterHeight);
             box1_pointB = new Point(
-                    halfWidth - margin, height - margin);
+                    halfWidth - margin * 2, height - margin * 2);
             box2_pointA = new Point(
-                    halfWidth + margin, halfHeight);
+                    halfWidth + margin * 8, halfHeight + quarterHeight);
             box2_pointB = new Point(
-                    width - margin, height - margin);
+                    width, height - margin);
 
             System.out.println(firstFrame.toString());
+            System.out.println(String.format("box1 (%f, %f) - (%f, %f)", box1_pointA.x, box1_pointA.y, box1_pointB.x, box1_pointB.y));
+            System.out.println(String.format("box2 (%f, %f) - (%f, %f)", box2_pointA.x, box2_pointA.y, box2_pointB.x, box2_pointB.y));
             inputToCb(firstFrame);
 
             region1_Cb = Cb.submat(new Rect(box1_pointA, box1_pointB));
             region2_Cb = Cb.submat(new Rect(box2_pointA, box2_pointB));
+
         }
 
         @Override
@@ -321,14 +339,14 @@ public class ObjectDetector {
                     BLUE, // The color the rectangle is drawn in
                     4); // Thickness of the rectangle lines
 
-           if (avg1 > ONE_RING_THRESHOLD && avg1 < FOUR_RING_THRESHOLD) {
-               isRingSeen = true;
+           if (avg1 >= ONE_RING_THRESHOLD && avg1 < FOUR_RING_THRESHOLD) {
+               boxSeen = 1;
            }
-           else if (avg2> ONE_RING_THRESHOLD && avg2 < FOUR_RING_THRESHOLD){
-               isRingSeen = true;
+           else if (avg2 >= ONE_RING_THRESHOLD && avg2 < FOUR_RING_THRESHOLD){
+               boxSeen = 2;
         }
            else {
-               isRingSeen = false;
+               boxSeen = 0;
            }
 
             /*Imgproc.rectangle(
@@ -340,5 +358,12 @@ public class ObjectDetector {
             */
             return input;
         }
+    }
+    public int getAvg1(){
+        return pipeline.avg1;
+    }
+
+    public int getAvg2(){
+        return pipeline.avg2;
     }
 }
