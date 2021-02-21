@@ -61,6 +61,7 @@ import java.util.List;
  * IMPORTANT: In order to use this OpMode, you need to obtain your own Vuforia license key as
  * is explained below.
  */
+
 public class ObjectDetector {
     private static final String VUFORIA_LICENSE_FILE = "/sdcard/data/vuforia-license.txt";
     private static final String TFOD_MODEL_ASSET = "UltimateGoal.tflite";
@@ -237,20 +238,29 @@ public class ObjectDetector {
         final int FOUR_RING_THRESHOLD = 150;
         final int ONE_RING_THRESHOLD = 130;
 
-        Point region1_pointA = new Point(
+        /*Point region1_pointA = new Point(
                 REGION1_TOPLEFT_ANCHOR_POINT.x,
                 REGION1_TOPLEFT_ANCHOR_POINT.y);
         Point region1_pointB = new Point(
                 REGION1_TOPLEFT_ANCHOR_POINT.x + REGION_WIDTH,
                 REGION1_TOPLEFT_ANCHOR_POINT.y + REGION_HEIGHT);
+        Point region2_pointA = new Point(
+
+        );*/
+        Point box1_pointA;
+        Point box1_pointB;
+        Point box2_pointA;
+        Point box2_pointB;
 
         /*
          * Working variables
          */
         Mat region1_Cb;
+        Mat region2_Cb;
         Mat YCrCb = new Mat();
         Mat Cb = new Mat();
         int avg1;
+        int avg2;
 
         // Volatile since accessed by OpMode thread w/o synchronization
         private volatile boolean isRingSeen = false;
@@ -268,10 +278,26 @@ public class ObjectDetector {
         @Override
         public void init(Mat firstFrame)
         {
+            int width = firstFrame.cols();
+            int height = firstFrame.rows();
+            int margin = width / 40;
+            int halfWidth = width / 2;
+            int halfHeight = height / 2;
+
+            box1_pointA = new Point(
+                    margin, halfHeight);
+            box1_pointB = new Point(
+                    halfWidth - margin, height - margin);
+            box2_pointA = new Point(
+                    halfWidth + margin, halfHeight);
+            box2_pointB = new Point(
+                    width - margin, height - margin);
+
             System.out.println(firstFrame.toString());
             inputToCb(firstFrame);
 
-            region1_Cb = Cb.submat(new Rect(region1_pointA, region1_pointB));
+            region1_Cb = Cb.submat(new Rect(box1_pointA, box1_pointB));
+            region2_Cb = Cb.submat(new Rect(box2_pointA, box2_pointB));
         }
 
         @Override
@@ -280,17 +306,27 @@ public class ObjectDetector {
             inputToCb(input);
 
             avg1 = (int) Core.mean(region1_Cb).val[0];
+            avg2 = (int) Core.mean(region2_Cb).val[0];
 
             Imgproc.rectangle(
                     input, // Buffer to draw on
-                    region1_pointA, // First point which defines the rectangle
-                    region1_pointB, // Second point which defines the rectangle
+                    box1_pointA, // First point which defines the rectangle
+                    box1_pointB, // Second point which defines the rectangle
                     BLUE, // The color the rectangle is drawn in
-                    10); // Thickness of the rectangle lines
+                    4); // Thickness of the rectangle lines
+            Imgproc.rectangle(
+                    input, // Buffer to draw on
+                    box2_pointA, // First point which defines the rectangle
+                    box2_pointB, // Second point which defines the rectangle
+                    BLUE, // The color the rectangle is drawn in
+                    4); // Thickness of the rectangle lines
 
            if (avg1 > ONE_RING_THRESHOLD && avg1 < FOUR_RING_THRESHOLD) {
                isRingSeen = true;
            }
+           else if (avg2> ONE_RING_THRESHOLD && avg2 < FOUR_RING_THRESHOLD){
+               isRingSeen = true;
+        }
            else {
                isRingSeen = false;
            }
@@ -303,11 +339,6 @@ public class ObjectDetector {
                     -1); // Negative thickness means solid fill
             */
             return input;
-        }
-
-        public int getAnalysis()
-        {
-            return avg1;
         }
     }
 }
