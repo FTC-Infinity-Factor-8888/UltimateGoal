@@ -170,8 +170,8 @@ public class JediMasterAutonomous extends LinearOpMode {
             telemetry.addData("ERROR", e.getLocalizedMessage());
             telemetry.addData("Solution", "Diverting to TargetZone 1");
         }
-        System.out.println("Vuforia initialized, starting OpenCV next");
-        ringDetector.initOpenCv();
+        System.out.println("Vuforia initialized, NOT starting OpenCV next");
+        //ringDetector.initOpenCv();
 
         //Make robot legal-size by raising intake
         intakeLift.setPosition(1.0);
@@ -197,8 +197,8 @@ public class JediMasterAutonomous extends LinearOpMode {
 
             //TODO: make sure we check opModeIsActive
             countTheRings();
-            sleep(10000);
-            stop();
+            //sleep(10000);
+            //stop();
             // Put run blocks here.
             intakeLift.setPosition(0.9);
             sleep(1000);
@@ -298,10 +298,9 @@ public class JediMasterAutonomous extends LinearOpMode {
                         recognition.getRight(), recognition.getBottom());
             }
         }
-        // ringdetector., initOpenCv, turn off tFod, if openCv Sees ring
+        // ringdetector., initOpenCv, if openCv Sees ring
         if(targetZone == 1) {
-            //ringDetector.initOpenCv();
-            //ringDetector.stopTfod();
+            ringDetector.initOpenCv();
             telemetry.addData("avg1", ringDetector.getAvg1());
             telemetry.addData("avg2", ringDetector.getAvg2());
             int boxSeen = ringDetector.whichBoxSeen();

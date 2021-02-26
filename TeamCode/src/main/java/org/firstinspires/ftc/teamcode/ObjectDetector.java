@@ -103,7 +103,7 @@ public class ObjectDetector {
         // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
         // first.
         initVuforia();
-        //initTfod();
+        initTfod();
 
         /**
          * Activate TensorFlow Object Detection before we wait for the start command.
@@ -193,6 +193,7 @@ public class ObjectDetector {
                 "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
         tfodParameters.minResultConfidence = 0.8f;
+        //tfodParameters.useObjectTracker = false;
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, QUAD, SINGLE);
     }
@@ -201,6 +202,7 @@ public class ObjectDetector {
      * Initializes OpenCv using the split viewport from Vuforia
      */
     public void initOpenCv() {
+        stopTfod();
         System.out.println("Starting OpenCV pipeline");
         openCvPassthrough.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
             @Override
@@ -221,6 +223,16 @@ public class ObjectDetector {
                 openCvPassthrough.startStreaming(0, 0, OpenCvCameraRotation.UPRIGHT);
             }
         });
+        int frameCount = 0;
+        do {
+            try{
+                Thread.sleep(35);
+            }
+            catch(InterruptedException e){
+                //Do nothing. Wake up.
+            }
+        } while(getInitialized() == false && frameCount++ < 30);
+        System.out.println("Done initializing, frameCount = " + frameCount);
     }
 
     public static class SingleRingDeterminationPipeline extends OpenCvPipeline {
@@ -272,8 +284,10 @@ public class ObjectDetector {
         Mat region2_Cb;
         Mat YCrCb = new Mat();
         Mat Cb = new Mat();
-        private volatile int avg1;
-        private volatile int avg2;
+
+        private volatile boolean initialized = false;
+        private volatile int avg1 = 0;
+        private volatile int avg2 = 0;
 
         // Volatile since accessed by OpMode thread w/o synchronization
         //private volatile boolean isRingSeen = false;
@@ -325,6 +339,7 @@ public class ObjectDetector {
 
             avg1 = (int) Core.mean(region1_Cb).val[0];
             avg2 = (int) Core.mean(region2_Cb).val[0];
+            initialized = true;
 
             Imgproc.rectangle(
                     input, // Buffer to draw on
@@ -359,6 +374,10 @@ public class ObjectDetector {
             return input;
         }
     }
+    public boolean getInitialized(){
+        return pipeline.initialized;
+    }
+
     public int getAvg1(){
         return pipeline.avg1;
     }
