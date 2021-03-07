@@ -8,13 +8,25 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES;
+import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XYZ;
+import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
+import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
+import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
 
 @Autonomous(name = "JediMasterAutonomous (Blocks to Java)")
 public class JediMasterAutonomous extends LinearOpMode {
@@ -59,7 +71,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     double holdSpeed;
     double holdTime;
 
-    private boolean stopThread = false;
+    private List<NavigationInfo> lastKnownTargets;
 
     /**
      * Describe this function...
@@ -157,7 +169,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         while (!(isStopRequested() || LFMotor.getCurrentPosition() > LfMotorMaximumTicks ||
                 LRMotor.getCurrentPosition() > LrMotorMaximumTicks ||
                 RFMotor.getCurrentPosition() > RfMotorMaximumTicks ||
-                RRMotor.getCurrentPosition() > RrMotorMaximumTicks)) {
+                RRMotor.getCurrentPosition() > RrMotorMaximumTicks || lastKnownTargets != null)) {
 
             debug("Loop started");
             currentHeading = getHeading();
@@ -171,6 +183,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                     rightSpeed = robotSpeed - correctionSpeed;
                     leftSpeed = robotSpeed + correctionSpeed;
                 }
+
             }
             PowerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             // Show motor power while driving:
@@ -230,22 +243,10 @@ public class JediMasterAutonomous extends LinearOpMode {
 
         //Make robot legal-size by raising intake
         intakeLift.setPosition(1.0);
-        telemetry.addData("Status", "Ready to start - v1.3.2");
+        telemetry.addData("Status", "Ready to start - v1.3.5");
         telemetry.update();
 
         waitForStart();
-
-        Runnable lookForStop = new Runnable() {
-            @Override
-            public void run() {
-                //Check to see if the opMode is running. Aborts when not running.
-                while (opModeIsActive() || stopThread) {
-                    idle();
-                }
-                requestOpModeStop();
-            }
-        };
-        Thread background = new Thread(lookForStop);
 
         if (opModeIsActive()) {
             //background.start();   [Thread has other consequences]
@@ -256,14 +257,13 @@ public class JediMasterAutonomous extends LinearOpMode {
             intakeLift.setPosition(0.9);
             sleep(1000);
             //AllSix();
-            navigationProbe(72);
+            navigationProbe(112);
             intakeLift.setPosition(0.0);
         }
         currentHeading = getHeading();
         telemetry.addData("Current Heading", currentHeading);
         telemetry.update();
         sleep(5000);
-        stopThread = true;
     }
 
     /**
@@ -471,6 +471,24 @@ public class JediMasterAutonomous extends LinearOpMode {
         telemetry.addData("RFPower", RFMotor.getPower());
         telemetry.addData("RRPower", RRMotor.getPower());
 
+        List<NavigationInfo> allVisibleTargets = ringDetector.getNavigationInfo();
+        if (allVisibleTargets != null) {
+            lastKnownTargets = allVisibleTargets;
+        }
+        if (lastKnownTargets != null) {
+            for (NavigationInfo visibleTarget : lastKnownTargets) {
+                telemetry.addData("Visible Target", visibleTarget.targetName);
+                telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
+                        visibleTarget.translation.get(0), visibleTarget.translation.get(1),
+                        visibleTarget.translation.get(2));
+                telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f",
+                        visibleTarget.rotation.firstAngle, visibleTarget.rotation.secondAngle,
+                        visibleTarget.rotation.thirdAngle);
+            }
+        }
+        else {
+            telemetry.addData("Visible Target", "none");
+        }
         telemetry.update();
     }
 
