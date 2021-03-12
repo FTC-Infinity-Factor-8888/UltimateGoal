@@ -8,28 +8,21 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES;
-import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XYZ;
-import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
-import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
-import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
 
 @Autonomous(name = "JediMasterAutonomous (Blocks to Java)")
 public class JediMasterAutonomous extends LinearOpMode {
+
+
+    private final PositionAndHeading TARGET_ZONE_A = new PositionAndHeading(1, 60, 0);
+    private final PositionAndHeading TARGET_ZONE_B = new PositionAndHeading(27, 35, 0);
+    private final PositionAndHeading TARGET_ZONE_C = new PositionAndHeading(54, 63, 0);
 
     private Servo intakeLift;
     private DcMotor LFMotor;
@@ -44,6 +37,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     boolean robotCanKeepGoing;
     double startLine = 1; //default to the first start line
     double targetZone = 1; //if countTheRings doesn't see anything, the value is target zone 1
+    PositionAndHeading targetZoneCoordinates = TARGET_ZONE_A;
 
     float currentHeading;
     double desiredHeading;
@@ -72,6 +66,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     double holdTime;
 
     private List<NavigationInfo> lastKnownTargets;
+    private PositionAndHeading lastKnownPositionAndHeading;
 
     /**
      * Describe this function...
@@ -198,6 +193,31 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
     }
 
+    private void driveTo() {
+        // What is the current location and heading? [DONE]
+
+        double xDist = lastKnownPositionAndHeading.xPosition - targetZoneCoordinates.xPosition;
+        double yDist = lastKnownPositionAndHeading.yPosition - targetZoneCoordinates.yPosition;
+
+        if (xDist == 0 && yDist == 0) {
+            // We are already there.
+            return;
+        }
+        else if (xDist == 0) {
+            // Turn around (180 degrees) and drive yDist forward.
+        }
+        else if (yDist ==0) {
+            // Turn 90 degrees and drive xDist forward.
+        }
+
+        // Based on heading [insert trigonometry here].
+        // How far does the robot need to turn.
+        // Turn "A" degrees
+        // What is my current location and heading?
+        // How far does the robot need to drive + heading correction?
+        // Drive(distance, heading);
+    }
+
     /**
      * This function is executed when this Op Mode is selected from the Driver Station.
      */
@@ -287,42 +307,12 @@ public class JediMasterAutonomous extends LinearOpMode {
         System.out.println("Debug" + text);
     }
 
-    /**
-     * Describe this function...
-     */
-    private void MatchSpecificUI() {
-        boolean UIDone;
-
-        startLine = 1;
-        targetZone = 1;
-        UIDone = false;
-        while (!(UIDone || opModeIsActive())) {
-            if (gamepad1.dpad_left) {
-                startLine = 1;
-            } else if (gamepad1.dpad_right) {
-                startLine = 2;
-            }
-            if (gamepad1.a) {
-                targetZone = 1;
-            } else if (gamepad1.b) {
-                targetZone = 2;
-            } else if (gamepad1.y) {
-                targetZone = 3;
-            }
-            if (gamepad1.left_bumper && gamepad1.right_bumper) {
-                UIDone = true;
-            }
-            telemetry.update();
-            telemetry.addData("Start Line", startLine);
-            telemetry.addData("Target Zone", targetZone);
-        }
-    }
-
     private void countTheRings() {
         // look for the rings
         List<Recognition> updatedRecognitions = ringDetector.getUpdatedRecognitions();
         if (updatedRecognitions != null) {
             targetZone = 1;
+            targetZoneCoordinates = TARGET_ZONE_A;
             telemetry.addData("# Object Detected", updatedRecognitions.size());
             // step through the list of recognitions and display boundary info.
             int i = 0;
@@ -333,9 +323,11 @@ public class JediMasterAutonomous extends LinearOpMode {
 
                 if (ringDetector.QUAD.equals(label)) {
                     targetZone = 3;
+                    targetZoneCoordinates = TARGET_ZONE_C;
                 }
                 else if (ringDetector.SINGLE.equals(label)) {
                     targetZone = 2;
+                    targetZoneCoordinates = TARGET_ZONE_B;
                 }
 
                 telemetry.addData(String.format("label (%d)", i), label);
@@ -353,6 +345,7 @@ public class JediMasterAutonomous extends LinearOpMode {
             int boxSeen = ringDetector.whichBoxSeen();
             if(boxSeen != 0) {
                 targetZone = 2;
+                targetZoneCoordinates = TARGET_ZONE_B;
                 if(boxSeen == 1) {
                     startLine = 2;
                 }
@@ -387,6 +380,7 @@ public class JediMasterAutonomous extends LinearOpMode {
      * with 0 as the heading at the time of IMU initialization.
      * Angles are positive in a counter-clockwise direction.
      */
+
     private float getHeading() {
         Orientation angles;
 
@@ -477,13 +471,20 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
         if (lastKnownTargets != null) {
             for (NavigationInfo visibleTarget : lastKnownTargets) {
+
+                lastKnownPositionAndHeading.xPosition =  visibleTarget.translation.get(0);
+                lastKnownPositionAndHeading.yPosition = visibleTarget.translation.get(1);
+                float zPosition = visibleTarget.translation.get(2);
+                float vuforiaRoll = visibleTarget.rotation.firstAngle;
+                float vuforiaPitch = visibleTarget.rotation.secondAngle;
+                lastKnownPositionAndHeading.vuforiaHeading = visibleTarget.rotation.thirdAngle;
+
                 telemetry.addData("Visible Target", visibleTarget.targetName);
                 telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
-                        visibleTarget.translation.get(0), visibleTarget.translation.get(1),
-                        visibleTarget.translation.get(2));
+                        lastKnownPositionAndHeading.xPosition,
+                        lastKnownPositionAndHeading.yPosition, zPosition);
                 telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f",
-                        visibleTarget.rotation.firstAngle, visibleTarget.rotation.secondAngle,
-                        visibleTarget.rotation.thirdAngle);
+                        vuforiaRoll, vuforiaPitch, lastKnownPositionAndHeading.vuforiaHeading);
             }
         }
         else {
