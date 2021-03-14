@@ -235,12 +235,18 @@ public class ObjectDetector {
         targetsUltimateGoal = vuforia.loadTrackablesFromAsset("UltimateGoal");
         VuforiaTrackable blueTowerGoalTarget = targetsUltimateGoal.get(0);
         blueTowerGoalTarget.setName("Blue Tower Goal Target");
+        OpenGLMatrix targetLocation = blueTowerGoalTarget.getLocation();
+        float[] loc = targetLocation.getData();
+        System.out.printf("Blue Tower Goal Location: (%.1f, %.1f, %.1f)\n", loc[0], loc[1], loc[2]);
         VuforiaTrackable redTowerGoalTarget = targetsUltimateGoal.get(1);
         redTowerGoalTarget.setName("Red Tower Goal Target");
         VuforiaTrackable redAllianceTarget = targetsUltimateGoal.get(2);
         redAllianceTarget.setName("Red Alliance Target");
         VuforiaTrackable blueAllianceTarget = targetsUltimateGoal.get(3);
         blueAllianceTarget.setName("Blue Alliance Target");
+        targetLocation = blueTowerGoalTarget.getLocation();
+        loc = targetLocation.getData();
+        System.out.printf("Blue Tower Goal Location: (%.1f, %.1f, %.1f)\n", loc[0], loc[1], loc[2]);
         VuforiaTrackable frontWallTarget = targetsUltimateGoal.get(4);
         frontWallTarget.setName("Front Wall Target");
 
@@ -316,9 +322,9 @@ public class ObjectDetector {
 
         // Next, translate the camera lens to where it is on the robot.
         // In this example, it is centered (left to right), but forward of the middle of the robot, and above ground level.
-        final float CAMERA_FORWARD_DISPLACEMENT  = 4.0f * mmPerInch;   // eg: Camera is 4 Inches in front of robot-center
-        final float CAMERA_VERTICAL_DISPLACEMENT = 11.25f * mmPerInch;   // eg: Camera is 8 Inches above ground
-        final float CAMERA_LEFT_DISPLACEMENT     = 0;     // eg: Camera is ON the robot's center line
+        final float CAMERA_FORWARD_DISPLACEMENT  = 8.0f * mmPerInch;   // eg: Camera is 8 Inches in front of robot-center
+        final float CAMERA_VERTICAL_DISPLACEMENT = 12.75f * mmPerInch;   // eg: Camera is 12.75 Inches above ground
+        final float CAMERA_LEFT_DISPLACEMENT     = -3.0f * mmPerInch;     // eg: Camera is 3 inches off the robot's center line to the left
 
         OpenGLMatrix robotFromCamera = OpenGLMatrix
                 .translation(CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT)

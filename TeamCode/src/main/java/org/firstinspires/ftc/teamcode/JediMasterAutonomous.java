@@ -76,10 +76,10 @@ public class JediMasterAutonomous extends LinearOpMode {
             if (targetZone == 1) {
                 //1a
                 drive(53);
-                Turn(25);
+                turn(25);
                 drive(17);
                 drive(-17);
-                Turn(0);
+                turn(0);
                 Strafe(18);
                 Hold(0);
                 drive(21);
@@ -87,19 +87,19 @@ public class JediMasterAutonomous extends LinearOpMode {
             } else if (targetZone == 2) {
                 //1b
                 drive(80);
-                Turn(-30);
+                turn(-30);
                 drive(20);
                 drive(-20);
-                Turn(0);
+                turn(0);
                 drive(-3);
                 Hold(0);
             } else {
                 //1c
                 drive(100);
-                Turn(25);
+                turn(25);
                 drive(20);
                 drive(-20);
-                Turn(0);
+                turn(0);
                 Strafe(18);
                 Hold(0);
                 drive(-20);
@@ -109,28 +109,28 @@ public class JediMasterAutonomous extends LinearOpMode {
             if (targetZone == 1) {
                 //2a
                 drive(53);
-                Turn(60);
+                turn(60);
                 drive(36);
                 drive(-36);
-                Turn(0);
+                turn(0);
                 drive(25);
                 Hold(0);
             } else if (targetZone == 2) {
                 //2b
                 drive(80);
-                Turn(30);
+                turn(30);
                 drive(18);
                 drive(-18);
-                Turn(0);
+                turn(0);
                 drive(-5);
                 Hold(0);
             } else {
                 //2c
                 drive(100);
-                Turn(60);
+                turn(60);
                 drive(36);
                 drive(-36);
-                Turn(0);
+                turn(0);
                 drive(-25);
                 Hold(0);
             }
@@ -204,15 +204,15 @@ public class JediMasterAutonomous extends LinearOpMode {
             return;
         }
         else if (xDist == 0) {
-            // Turn around (180 degrees) and drive yDist forward.
+            // turn around (180 degrees) and drive yDist forward.
         }
         else if (yDist ==0) {
-            // Turn 90 degrees and drive xDist forward.
+            // turn 90 degrees and drive xDist forward.
         }
 
         // Based on heading [insert trigonometry here].
         // How far does the robot need to turn.
-        // Turn "A" degrees
+        // turn "A" degrees
         // What is my current location and heading?
         // How far does the robot need to drive + heading correction?
         // Drive(distance, heading);
@@ -496,8 +496,9 @@ public class JediMasterAutonomous extends LinearOpMode {
     /**
      * Describe this function...
      */
-    private void Turn(double Heading) {
+    private void turn(double Heading) {
         desiredHeading = Heading;
+
         currentHeading = getHeading();
         delta = desiredHeading - currentHeading;
         while (!(isStopRequested() || Math.abs(delta) <= deltaThreshold)) {
@@ -506,7 +507,8 @@ public class JediMasterAutonomous extends LinearOpMode {
                 leftRearMotorPower = -turnSpeed;
                 rightFrontMotorPower = turnSpeed;
                 rightRearMotorPower = turnSpeed;
-            } else {
+            }
+            else {
                 leftFrontMotorPower = turnSpeed;
                 leftRearMotorPower = turnSpeed;
                 rightFrontMotorPower = -turnSpeed;
