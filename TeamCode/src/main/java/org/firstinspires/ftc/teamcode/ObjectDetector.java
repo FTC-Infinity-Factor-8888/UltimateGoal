@@ -123,10 +123,11 @@ public class ObjectDetector {
 
     private SingleRingDeterminationPipeline pipeline;
 
-    // Phone orientation for navigation.
-    private float phoneXRotate    = 0;
-    private float phoneYRotate    = 0;
-    private float phoneZRotate    = 0;
+    /**
+     * These variables are used to adjust the x and y position of the camera in relation to the robot.
+     */
+    private float cameraAdjustX;
+    private float cameraAdjustY;
 
     //empty constructor
     public void ObjectDetector() {
@@ -136,6 +137,9 @@ public class ObjectDetector {
         System.out.println("Initializing ObjectDetector");
 
         hardwareMap = robot.getHardwareMap();
+
+        cameraAdjustX = robot.getCameraAdjustX();
+        cameraAdjustY = robot.getCameraAdjustY();
 
         // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
         // first.
@@ -292,48 +296,6 @@ public class ObjectDetector {
                 .translation(halfField, -quadField, mmTargetHeight)
                 .multiplied(Orientation.getRotationMatrix(EXTRINSIC, XYZ, DEGREES, 90, 0, -90)));
 
-        //
-        // Create a transformation matrix describing where the phone is on the robot.
-        //
-        // NOTE !!!!  It's very important that you turn OFF your phone's Auto-Screen-Rotation option.
-        // Lock it into Portrait for these numbers to work.
-        //
-        // Info:  The coordinate frame for the robot looks the same as the field.
-        // The robot's "forward" direction is facing out along X axis, with the LEFT side facing out along the Y axis.
-        // Z is UP on the robot.  This equates to a bearing angle of Zero degrees.
-        //
-        // The phone starts out lying flat, with the screen facing Up and with the physical top of the phone
-        // pointing to the LEFT side of the Robot.
-        // The two examples below assume that the camera is facing forward out the front of the robot.
-
-        // We need to rotate the camera around it's long axis to bring the correct camera forward.
-        if (CAMERA_CHOICE == BACK) {
-            phoneYRotate = -90;
-        } else {
-            phoneYRotate = 90;
-        }
-
-        // Rotate the phone vertical about the X axis if it's in portrait mode
-        if (PHONE_IS_PORTRAIT) {
-            phoneXRotate = 90 ;
-        }
-
-        //TODO: Replace these numbers with actual numbers measured from robot.
-
-        // Next, translate the camera lens to where it is on the robot.
-        // In this example, it is centered (left to right), but forward of the middle of the robot, and above ground level.
-        final float CAMERA_FORWARD_DISPLACEMENT  = 8.0f * mmPerInch;   // eg: Camera is 8 Inches in front of robot-center
-        final float CAMERA_VERTICAL_DISPLACEMENT = 12.75f * mmPerInch;   // eg: Camera is 12.75 Inches above ground
-        final float CAMERA_LEFT_DISPLACEMENT     = -3.0f * mmPerInch;     // eg: Camera is 3 inches off the robot's center line to the left
-
-        OpenGLMatrix robotFromCamera = OpenGLMatrix
-                .translation(CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT)
-                .multiplied(Orientation.getRotationMatrix(EXTRINSIC, YZX, DEGREES, phoneYRotate, phoneZRotate, phoneXRotate));
-
-        /**  Let all the trackable listeners know where the phone is.  */
-        for (VuforiaTrackable trackable : allTrackables) {
-            ((VuforiaTrackableDefaultListener) trackable.getListener()).setPhoneInformation(robotFromCamera, parameters.cameraDirection);
-        }
         targetsUltimateGoal.activate();
     }
 
@@ -409,8 +371,8 @@ public class ObjectDetector {
 
                     // express position (translation) of robot in inches.
                     VectorF translation = robotLocationTransform.getTranslation();
-                    VectorF positionInInches = new VectorF(new float[]{translation.get(0) / mmPerInch,
-                            translation.get(1) / mmPerInch, translation.get(2) / mmPerInch});
+                    VectorF positionInInches = new VectorF(new float[]{translation.get(0) / mmPerInch + cameraAdjustX,
+                            translation.get(1) / mmPerInch + cameraAdjustY, translation.get(2) / mmPerInch});
                     targetInfo.translation = positionInInches;
 
                     // express the rotation of the robot in degrees.

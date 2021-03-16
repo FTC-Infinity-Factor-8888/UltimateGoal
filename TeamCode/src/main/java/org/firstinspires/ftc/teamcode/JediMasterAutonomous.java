@@ -20,9 +20,9 @@ import java.util.List;
 public class JediMasterAutonomous extends LinearOpMode {
 
 
-    private final PositionAndHeading TARGET_ZONE_A = new PositionAndHeading(1, 60, 0);
-    private final PositionAndHeading TARGET_ZONE_B = new PositionAndHeading(27, 35, 0);
-    private final PositionAndHeading TARGET_ZONE_C = new PositionAndHeading(54, 63, 0);
+    private final PositionAndHeading TARGET_ZONE_A = new PositionAndHeading(13, 58, 0);
+    private final PositionAndHeading TARGET_ZONE_B = new PositionAndHeading(34, 35, 0);
+    private final PositionAndHeading TARGET_ZONE_C = new PositionAndHeading(58, 58, 0);
 
     private Servo intakeLift;
     private DcMotor LFMotor;
@@ -196,8 +196,11 @@ public class JediMasterAutonomous extends LinearOpMode {
     private void driveTo() {
         // What is the current location and heading? [DONE]
 
-        double xDist = lastKnownPositionAndHeading.xPosition - targetZoneCoordinates.xPosition;
-        double yDist = lastKnownPositionAndHeading.yPosition - targetZoneCoordinates.yPosition;
+        double xDist = targetZoneCoordinates.xPosition - lastKnownPositionAndHeading.xPosition;
+        double yDist = targetZoneCoordinates.yPosition - lastKnownPositionAndHeading.yPosition;
+
+        double targetDist;
+        double targetHeading;
 
         if (xDist == 0 && yDist == 0) {
             // We are already there.
@@ -205,9 +208,22 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
         else if (xDist == 0) {
             // turn around (180 degrees) and drive yDist forward.
+            targetDist = yDist;
+            targetHeading = normalizeHeading(lastKnownPositionAndHeading.vuforiaHeading + 180);
         }
-        else if (yDist ==0) {
+        else if (yDist == 0) {
             // turn 90 degrees and drive xDist forward.
+            if (xDist > 0) {
+                targetDist = xDist;
+                targetHeading = normalizeHeading(lastKnownPositionAndHeading.vuforiaHeading + 90);
+            }
+            else {
+                targetDist = -xDist;
+                targetHeading = normalizeHeading(lastKnownPositionAndHeading.vuforiaHeading - 90);
+            }
+        }
+        else {
+            
         }
 
         // Based on heading [insert trigonometry here].
@@ -218,6 +234,18 @@ public class JediMasterAutonomous extends LinearOpMode {
         // Drive(distance, heading);
     }
 
+    private double normalizeHeading(double heading) {
+        while (heading >= 180.0 || heading < -180.0) {
+            if (heading >= 180.0) {
+                heading -= 360.0;
+            }
+            else if (heading < -180.0) {
+                heading += 360.0;
+            }
+        }
+        return heading;
+    }
+
     /**
      * This function is executed when this Op Mode is selected from the Driver Station.
      */
@@ -225,6 +253,8 @@ public class JediMasterAutonomous extends LinearOpMode {
     public void runOpMode() {
         robot = new Robot();
         robot.setHardwareMap(hardwareMap);
+        robot.setCameraAdjustX(11.0f);
+        robot.setCameraAdjustY(-4.5f);
         double ticksPerMotorRev;
         double WheelCircumferenceInInches;
 

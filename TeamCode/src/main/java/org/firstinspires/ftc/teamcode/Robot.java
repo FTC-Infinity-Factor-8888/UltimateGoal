@@ -9,6 +9,13 @@ public class Robot {
     private float cameraLeftDisplacement;
     private float cameraVerticalDisplacement;
 
+    /**
+     * These variables are used to adjust the x and y position of the camera in relation to the robot.
+     */
+    private float cameraAdjustX;
+    private float cameraAdjustY;
+
+
     public HardwareMap getHardwareMap() {
         return hardwareMap;
     }
@@ -39,6 +46,22 @@ public class Robot {
 
     public void setCameraVerticalDisplacement(float cameraVerticalDisplacement) {
         this.cameraVerticalDisplacement = cameraVerticalDisplacement;
+    }
+
+    public float getCameraAdjustX() {
+        return cameraAdjustX;
+    }
+
+    public void setCameraAdjustX(float cameraAdjustX) {
+        this.cameraAdjustX = cameraAdjustX;
+    }
+
+    public float getCameraAdjustY() {
+        return cameraAdjustY;
+    }
+
+    public void setCameraAdjustY(float cameraAdjustY) {
+        this.cameraAdjustY = cameraAdjustY;
     }
 }
 
