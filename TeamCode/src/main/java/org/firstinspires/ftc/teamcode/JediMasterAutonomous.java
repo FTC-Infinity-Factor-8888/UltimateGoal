@@ -193,44 +193,52 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
     }
 
-    private void driveTo() {
+    private void driveTo(PositionAndHeading target) {
         // What is the current location and heading? [DONE]
 
-        double xDist = targetZoneCoordinates.xPosition - lastKnownPositionAndHeading.xPosition;
-        double yDist = targetZoneCoordinates.yPosition - lastKnownPositionAndHeading.yPosition;
+        double xDist = target.xPosition - lastKnownPositionAndHeading.xPosition;
+        double yDist = target.yPosition - lastKnownPositionAndHeading.yPosition;
 
-        double targetDist;
-        double targetHeading;
+        double targetDist = Math.sqrt(xDist * xDist + yDist * yDist);
+        double targetHeading = 0;
 
+        // Based on heading [insert trigonometry here].
         if (xDist == 0 && yDist == 0) {
             // We are already there.
             return;
         }
-        else if (xDist == 0) {
-            // turn around (180 degrees) and drive yDist forward.
-            targetDist = yDist;
-            targetHeading = normalizeHeading(lastKnownPositionAndHeading.vuforiaHeading + 180);
+        else if (xDist > 0 && yDist >= 0) {
+            targetHeading = Math.toDegrees(Math.atan(yDist / xDist));
         }
-        else if (yDist == 0) {
-            // turn 90 degrees and drive xDist forward.
-            if (xDist > 0) {
-                targetDist = xDist;
-                targetHeading = normalizeHeading(lastKnownPositionAndHeading.vuforiaHeading + 90);
-            }
-            else {
-                targetDist = -xDist;
-                targetHeading = normalizeHeading(lastKnownPositionAndHeading.vuforiaHeading - 90);
-            }
+        else if (xDist == 0 && yDist > 0) {
+            targetHeading = 90;
         }
-        else {
-            
+        else if (xDist < 0) {
+            // it doesn't matter if y is less than, greater than, or equal to zero, the math is the same!
+            targetHeading = Math.toDegrees(Math.atan(yDist / xDist)) + 180;
+        }
+        else if (xDist == 0 && yDist < 0) {
+            targetHeading = 270;
+        }
+        else if (xDist > 0 && yDist < 0) {
+            targetHeading = Math.toDegrees(Math.atan(yDist / xDist)) + 360;
         }
 
-        // Based on heading [insert trigonometry here].
         // How far does the robot need to turn.
+        targetHeading = normalizeHeading(targetHeading - currentHeading);
+
         // turn "A" degrees
-        // What is my current location and heading?
+        turn(targetHeading);
+
         // How far does the robot need to drive + heading correction?
+        if (targetDist <  30) {
+            drive(targetDist);
+        }
+        else {
+            drive(targetDist / 2);
+            driveTo(target);
+        }
+
         // Drive(distance, heading);
     }
 
@@ -308,6 +316,7 @@ public class JediMasterAutonomous extends LinearOpMode {
             sleep(1000);
             //AllSix();
             navigationProbe(112);
+            driveTo(targetZoneCoordinates);
             intakeLift.setPosition(0.0);
         }
         currentHeading = getHeading();
@@ -507,7 +516,11 @@ public class JediMasterAutonomous extends LinearOpMode {
                 float zPosition = visibleTarget.translation.get(2);
                 float vuforiaRoll = visibleTarget.rotation.firstAngle;
                 float vuforiaPitch = visibleTarget.rotation.secondAngle;
-                lastKnownPositionAndHeading.vuforiaHeading = visibleTarget.rotation.thirdAngle;
+                /**
+                 * Vuforia is off by 90 degrees compared to the IMU
+                 * The code below matches the IMU value
+                 */
+                lastKnownPositionAndHeading.vuforiaHeading = normalizeHeading(visibleTarget.rotation.thirdAngle - 90);
 
                 telemetry.addData("Visible Target", visibleTarget.targetName);
                 telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
