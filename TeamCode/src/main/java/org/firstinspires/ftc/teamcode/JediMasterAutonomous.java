@@ -11,18 +11,25 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 
 import java.util.List;
+
+import static org.firstinspires.ftc.teamcode.PositionAndHeading.VUFORIA;
+import static org.firstinspires.ftc.teamcode.PositionAndHeading.IMU;
 
 @Autonomous(name = "JediMasterAutonomous (Blocks to Java)")
 public class JediMasterAutonomous extends LinearOpMode {
 
 
-    private final PositionAndHeading TARGET_ZONE_A = new PositionAndHeading(13, 58, 0);
-    private final PositionAndHeading TARGET_ZONE_B = new PositionAndHeading(34, 35, 0);
-    private final PositionAndHeading TARGET_ZONE_C = new PositionAndHeading(58, 58, 0);
+    private final PositionAndHeading START_LINE_1 = new PositionAndHeading(-69.5, 47.75, 0,0);
+    private final PositionAndHeading START_LINE_2 = new PositionAndHeading(-69.5, 21.5, 0,0);
+    private final PositionAndHeading TARGET_ZONE_A = new PositionAndHeading(13, 58, 0,0);
+    private final PositionAndHeading TARGET_ZONE_B = new PositionAndHeading(34, 35, 0,0);
+    private final PositionAndHeading TARGET_ZONE_C = new PositionAndHeading(58, 58, 0,0);
 
     private Servo intakeLift;
     private DcMotor LFMotor;
@@ -37,9 +44,9 @@ public class JediMasterAutonomous extends LinearOpMode {
     boolean robotCanKeepGoing;
     double startLine = 1; //default to the first start line
     double targetZone = 1; //if countTheRings doesn't see anything, the value is target zone 1
+    PositionAndHeading startLineCoordinates = START_LINE_1;
     PositionAndHeading targetZoneCoordinates = TARGET_ZONE_A;
 
-    float currentHeading;
     double desiredHeading;
     double delta;
     double deltaThreshold;
@@ -66,7 +73,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     double holdTime;
 
     private List<NavigationInfo> lastKnownTargets;
-    private PositionAndHeading lastKnownPositionAndHeading;
+    private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
 
     /**
      * Describe this function...
@@ -81,9 +88,9 @@ public class JediMasterAutonomous extends LinearOpMode {
                 drive(-17);
                 turn(0);
                 Strafe(18);
-                Hold(0);
+                hold(0);
                 drive(21);
-                Hold(0);
+                hold(0);
             } else if (targetZone == 2) {
                 //1b
                 drive(80);
@@ -92,7 +99,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 drive(-20);
                 turn(0);
                 drive(-3);
-                Hold(0);
+                hold(0);
             } else {
                 //1c
                 drive(100);
@@ -101,9 +108,9 @@ public class JediMasterAutonomous extends LinearOpMode {
                 drive(-20);
                 turn(0);
                 Strafe(18);
-                Hold(0);
+                hold(0);
                 drive(-20);
-                Hold(0);
+                hold(0);
             }
         } else {
             if (targetZone == 1) {
@@ -114,7 +121,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 drive(-36);
                 turn(0);
                 drive(25);
-                Hold(0);
+                hold(0);
             } else if (targetZone == 2) {
                 //2b
                 drive(80);
@@ -123,7 +130,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 drive(-18);
                 turn(0);
                 drive(-5);
-                Hold(0);
+                hold(0);
             } else {
                 //2c
                 drive(100);
@@ -132,7 +139,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 drive(-36);
                 turn(0);
                 drive(-25);
-                Hold(0);
+                hold(0);
             }
         }
     }
@@ -167,7 +174,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 RRMotor.getCurrentPosition() > RrMotorMaximumTicks || lastKnownTargets != null)) {
 
             debug("Loop started");
-            currentHeading = getHeading();
+            double currentHeading = getHeading();
             delta = desiredHeading - currentHeading;
             if (Math.abs(delta) >= deltaThreshold) {
                 if (delta > 0) {
@@ -225,7 +232,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
 
         // How far does the robot need to turn.
-        targetHeading = normalizeHeading(targetHeading - currentHeading);
+        targetHeading = normalizeHeading(targetHeading - lastKnownPositionAndHeading.heading);
 
         // turn "A" degrees
         turn(targetHeading);
@@ -315,12 +322,14 @@ public class JediMasterAutonomous extends LinearOpMode {
             intakeLift.setPosition(0.9);
             sleep(1000);
             //AllSix();
+            // IMU starts to pay attention to where it's going, in case Vuforia doesn't pick up the target.
+            Position position = new Position(DistanceUnit.INCH, startLineCoordinates.xPosition, startLineCoordinates.yPosition, 0, System.nanoTime());
+            imu.startAccelerationIntegration(position, null, 1);
             navigationProbe(112);
             driveTo(targetZoneCoordinates);
             intakeLift.setPosition(0.0);
         }
-        currentHeading = getHeading();
-        telemetry.addData("Current Heading", currentHeading);
+        telemetry.addData("Current Heading", getHeading());
         telemetry.update();
         sleep(5000);
     }
@@ -387,9 +396,11 @@ public class JediMasterAutonomous extends LinearOpMode {
                 targetZoneCoordinates = TARGET_ZONE_B;
                 if(boxSeen == 1) {
                     startLine = 2;
+                    startLineCoordinates = START_LINE_2;
                 }
                 else if(boxSeen == 2) {
                     startLine = 1;
+                    startLineCoordinates = START_LINE_1;
                 }
             }
             telemetry.addData("StartLine", startLine);
@@ -420,11 +431,8 @@ public class JediMasterAutonomous extends LinearOpMode {
      * Angles are positive in a counter-clockwise direction.
      */
 
-    private float getHeading() {
-        Orientation angles;
-
-        angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        return angles.firstAngle;
+    private double getHeading() {
+        return lastKnownPositionAndHeading.heading;
     }
 
     /**
@@ -447,7 +455,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         telemetry.update();
         while (!(isStopRequested() || !LFMotor.isBusy() || !LRMotor.isBusy() || !RFMotor.isBusy() || !RRMotor.isBusy())) {
             debug("Loop started");
-            currentHeading = getHeading();
+            double currentHeading = getHeading();
             delta = desiredHeading - currentHeading;
             if (Math.abs(delta) >= deltaThreshold) {
                 if (delta > 0) {
@@ -495,7 +503,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         telemetry.addData("Target Zone", targetZone);
 
         telemetry.addData("Desired Heading", desiredHeading);
-        telemetry.addData("Current Heading", currentHeading);
+        telemetry.addData("Current Heading", lastKnownPositionAndHeading.heading);
         telemetry.addData("Delta", delta);
         telemetry.addData("TurnSpeed", turnSpeed);
 
@@ -511,8 +519,8 @@ public class JediMasterAutonomous extends LinearOpMode {
         if (lastKnownTargets != null) {
             for (NavigationInfo visibleTarget : lastKnownTargets) {
 
-                lastKnownPositionAndHeading.xPosition =  visibleTarget.translation.get(0);
-                lastKnownPositionAndHeading.yPosition = visibleTarget.translation.get(1);
+                float xPosition =  visibleTarget.translation.get(0);
+                float yPosition = visibleTarget.translation.get(1);
                 float zPosition = visibleTarget.translation.get(2);
                 float vuforiaRoll = visibleTarget.rotation.firstAngle;
                 float vuforiaPitch = visibleTarget.rotation.secondAngle;
@@ -520,18 +528,28 @@ public class JediMasterAutonomous extends LinearOpMode {
                  * Vuforia is off by 90 degrees compared to the IMU
                  * The code below matches the IMU value
                  */
-                lastKnownPositionAndHeading.vuforiaHeading = normalizeHeading(visibleTarget.rotation.thirdAngle - 90);
+                double vuforiaHeading = normalizeHeading(visibleTarget.rotation.thirdAngle - 90);
+
+                lastKnownPositionAndHeading = new PositionAndHeading(xPosition, yPosition, vuforiaHeading, VUFORIA);
+                Position position = new Position(DistanceUnit.INCH, xPosition, yPosition, 0, System.nanoTime());
+                //Tells the IMU to start paying attention because the IMU is the backup to Vuforia.
+                imu.startAccelerationIntegration(position, null, 1);
 
                 telemetry.addData("Visible Target", visibleTarget.targetName);
                 telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
-                        lastKnownPositionAndHeading.xPosition,
-                        lastKnownPositionAndHeading.yPosition, zPosition);
+                        xPosition, yPosition, zPosition);
                 telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f",
-                        vuforiaRoll, vuforiaPitch, lastKnownPositionAndHeading.vuforiaHeading);
+                        vuforiaRoll, vuforiaPitch, vuforiaHeading);
             }
         }
         else {
             telemetry.addData("Visible Target", "none");
+            //IMU takes over
+            Position position = imu.getPosition().toUnit(DistanceUnit.INCH);
+            Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            lastKnownPositionAndHeading = new PositionAndHeading(position.x, position.y, angles.firstAngle, IMU);
+            telemetry.addData("IMU Position, Heading", "(%.1f, %.1f), %.0f", position.x, position.y,
+                    angles.firstAngle);
         }
         telemetry.update();
     }
@@ -542,7 +560,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     private void turn(double Heading) {
         desiredHeading = Heading;
 
-        currentHeading = getHeading();
+        double currentHeading = getHeading();
         delta = desiredHeading - currentHeading;
         while (!(isStopRequested() || Math.abs(delta) <= deltaThreshold)) {
             if (delta > 0) {
@@ -563,17 +581,17 @@ public class JediMasterAutonomous extends LinearOpMode {
             delta = desiredHeading - currentHeading;
         }
         PowerTheWheels(0, 0, 0, 0);
-        Hold(Heading);
+        hold(Heading);
     }
 
     /**
      * Describe this function...
      */
-    private void Hold(double Heading) {
+    private void hold(double Heading) {
         ElapsedTime Timer;
 
         desiredHeading = Heading;
-        currentHeading = getHeading();
+        double currentHeading = getHeading();
         delta = desiredHeading - currentHeading;
         Timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         Timer.reset();
@@ -621,8 +639,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         telemetry.addData("RRPower ", RRMotor.getPower());
         telemetry.update();
         while (!(isStopRequested() || !LFMotor.isBusy() || !LRMotor.isBusy() || !RFMotor.isBusy() || !RRMotor.isBusy())) {
-            currentHeading = getHeading();
-            delta = desiredHeading - currentHeading;
+            delta = desiredHeading - getHeading();
             if (Math.abs(delta) >= deltaThreshold) {
                 if (delta > 0) {
                     if (distance > 0) {
