@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.hardware.bosch.NaiveAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -168,10 +167,11 @@ public class JediMasterAutonomous extends LinearOpMode {
         RRMotor.setPower(rightSpeed);
         debug("Motors On");
 
-        while (!(isStopRequested() || LFMotor.getCurrentPosition() > LfMotorMaximumTicks ||
+        while (opModeIsActive() && !(LFMotor.getCurrentPosition() > LfMotorMaximumTicks ||
                 LRMotor.getCurrentPosition() > LrMotorMaximumTicks ||
                 RFMotor.getCurrentPosition() > RfMotorMaximumTicks ||
-                RRMotor.getCurrentPosition() > RrMotorMaximumTicks || lastKnownPositionAndHeading.valueSource == VUFORIA)) {
+                RRMotor.getCurrentPosition() > RrMotorMaximumTicks ||
+                lastKnownPositionAndHeading.valueSource == VUFORIA)) {
 
             debug("Loop started");
             double currentHeading = getHeading();
@@ -187,16 +187,16 @@ public class JediMasterAutonomous extends LinearOpMode {
                 }
 
             }
-            PowerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
+            powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             // Show motor power while driving:
             telemetryDashboard("Navigation Probe");
         }
         // Stop the robot
         debug("End of loop");
-        PowerTheWheels(0, 0, 0, 0);
+        powerTheWheels(0, 0, 0, 0);
 
         if(!opModeIsActive()) {
-            requestOpModeStop();
+            throw new EmergencyStopException("Navigation Probe");
         }
     }
 
@@ -323,7 +323,8 @@ public class JediMasterAutonomous extends LinearOpMode {
         waitForStart();
 
         if (opModeIsActive()) {
-            //background.start();   [Thread has other consequences]
+            try {
+                //background.start();   [Thread has other consequences]
 
             //TODO: make sure we check opModeIsActive
             countTheRings();
@@ -341,10 +342,11 @@ public class JediMasterAutonomous extends LinearOpMode {
                 driveTo(targetZoneCoordinates);
             }
             intakeLift.setPosition(0.0);
+            }
+            catch(EmergencyStopException e){
+                // QUIT OUT OF THE PROGRAM RIGHT NOW!!!
+            }
         }
-        telemetry.addData("Current Heading", getHeading());
-        telemetry.update();
-        sleep(5000);
     }
 
     /**
@@ -448,64 +450,6 @@ public class JediMasterAutonomous extends LinearOpMode {
         return lastKnownPositionAndHeading.heading;
     }
 
-    /**
-     * Drive in a straight line.
-     * @param distance How far to move, in inches.
-     */
-    private void drive(double distance) {
-        debug("Drive is called");
-        // Drive should be straight along the heading
-        double desiredHeading = getHeading();
-        debug("Heading " + desiredHeading);
-        setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
-        leftSpeed = robotSpeed;
-        rightSpeed = robotSpeed;
-        LFMotor.setPower(leftSpeed);
-        LRMotor.setPower(leftSpeed);
-        RFMotor.setPower(rightSpeed);
-        RRMotor.setPower(rightSpeed);
-        debug("Motors On");
-        telemetry.update();
-        while (!(isStopRequested() || !LFMotor.isBusy() || !LRMotor.isBusy() || !RFMotor.isBusy() || !RRMotor.isBusy())) {
-            debug("Loop started");
-            double currentHeading = getHeading();
-            delta = desiredHeading - currentHeading;
-            if (Math.abs(delta) >= deltaThreshold) {
-                if (delta > 0) {
-                    if (distance > 0) {
-                        rightSpeed = robotSpeed + correctionSpeed;
-                        leftSpeed = robotSpeed - correctionSpeed;
-                    } else {
-                        rightSpeed = robotSpeed - correctionSpeed;
-                        leftSpeed = robotSpeed + correctionSpeed;
-                    }
-                } else {
-                    if (distance > 0) {
-                        rightSpeed = robotSpeed - correctionSpeed;
-                        leftSpeed = robotSpeed + correctionSpeed;
-                    } else {
-                        rightSpeed = robotSpeed + correctionSpeed;
-                        leftSpeed = robotSpeed - correctionSpeed;
-                    }
-                }
-            }
-            PowerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
-            // Show motor power while driving:
-            telemetryDashboard("Drive");
-        }
-        // Stop the robot
-        debug("End of loop");
-        PowerTheWheels(0, 0, 0, 0);
-        telemetryDashboard("Drive");
-        sleep(1000);
-        // Reset motor mode
-        setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        if(!opModeIsActive()) {
-            requestOpModeStop();
-        }
-    }
-
     private void setMotorMode(DcMotor.RunMode mode) {
         LFMotor.setMode(mode);
         LRMotor.setMode(mode);
@@ -562,6 +506,66 @@ public class JediMasterAutonomous extends LinearOpMode {
     }
 
     /**
+     * Drive in a straight line.
+     * @param distance How far to move, in inches.
+     */
+    private void drive(double distance) {
+        debug("Drive is called");
+        // Drive should be straight along the heading
+        double desiredHeading = getHeading();
+        debug("Heading " + desiredHeading);
+        setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
+        leftSpeed = robotSpeed;
+        rightSpeed = robotSpeed;
+        LFMotor.setPower(leftSpeed);
+        LRMotor.setPower(leftSpeed);
+        RFMotor.setPower(rightSpeed);
+        RRMotor.setPower(rightSpeed);
+        debug("Motors On");
+        telemetry.update();
+        while (opModeIsActive() && LFMotor.isBusy() && LRMotor.isBusy() && RFMotor.isBusy() &&
+                !RRMotor.isBusy()) {
+            debug("Loop started");
+            double currentHeading = getHeading();
+            delta = desiredHeading - currentHeading;
+            if (Math.abs(delta) >= deltaThreshold) {
+                if (delta > 0) {
+                    if (distance > 0) {
+                        rightSpeed = robotSpeed + correctionSpeed;
+                        leftSpeed = robotSpeed - correctionSpeed;
+                    } else {
+                        rightSpeed = robotSpeed - correctionSpeed;
+                        leftSpeed = robotSpeed + correctionSpeed;
+                    }
+                } else {
+                    if (distance > 0) {
+                        rightSpeed = robotSpeed - correctionSpeed;
+                        leftSpeed = robotSpeed + correctionSpeed;
+                    } else {
+                        rightSpeed = robotSpeed + correctionSpeed;
+                        leftSpeed = robotSpeed - correctionSpeed;
+                    }
+                }
+            }
+            powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
+            // Show motor power while driving:
+            telemetryDashboard("Drive");
+        }
+
+        if(!opModeIsActive()) {
+            throw new EmergencyStopException("Drive");
+        }
+
+        // Stop the robot
+        debug("End of loop");
+        powerTheWheels(0, 0, 0, 0);
+        telemetryDashboard("Drive");
+        sleep(1000);
+        // Reset motor mode
+        setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    /**
      * Describe this function...
      */
     private void turn(double Heading) {
@@ -569,7 +573,7 @@ public class JediMasterAutonomous extends LinearOpMode {
 
         double currentHeading = getHeading();
         delta = desiredHeading - currentHeading;
-        while (!(isStopRequested() || Math.abs(delta) <= deltaThreshold)) {
+        while (opModeIsActive() && Math.abs(delta) > deltaThreshold) {
             if (delta > 0) {
                 leftFrontMotorPower = -turnSpeed;
                 leftRearMotorPower = -turnSpeed;
@@ -582,19 +586,20 @@ public class JediMasterAutonomous extends LinearOpMode {
                 rightFrontMotorPower = -turnSpeed;
                 rightRearMotorPower = -turnSpeed;
             }
-            PowerTheWheels(leftFrontMotorPower, leftRearMotorPower, rightFrontMotorPower, rightRearMotorPower);
+            powerTheWheels(leftFrontMotorPower, leftRearMotorPower, rightFrontMotorPower, rightRearMotorPower);
             telemetryDashboard("Turn");
             currentHeading = getHeading();
             delta = desiredHeading - currentHeading;
         }
-        PowerTheWheels(0, 0, 0, 0);
+
+        if(!opModeIsActive()) {
+            throw new EmergencyStopException("Turn");
+        }
+
+        powerTheWheels(0, 0, 0, 0);
         telemetryDashboard("Turn");
         sleep(1000);
         hold(Heading);
-
-        if(!opModeIsActive()) {
-            requestOpModeStop();
-        }
     }
 
     /**
@@ -616,20 +621,21 @@ public class JediMasterAutonomous extends LinearOpMode {
                 leftSpeed = holdSpeed;
                 rightSpeed = -holdSpeed;
             }
-            PowerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
+            powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             sleep(75);
-            PowerTheWheels(0, 0, 0, 0);
+            powerTheWheels(0, 0, 0, 0);
             telemetryDashboard("Hold");
             currentHeading = getHeading();
             delta = desiredHeading - currentHeading;
         }
-        PowerTheWheels(0, 0, 0, 0);
-        telemetryDashboard("Hold");
-        sleep(1000);
 
         if(!opModeIsActive()) {
-            requestOpModeStop();
+            throw new EmergencyStopException("Hold");
         }
+
+        powerTheWheels(0, 0, 0, 0);
+        telemetryDashboard("Hold");
+        sleep(1000);
     }
 
     /**
@@ -643,7 +649,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         leftRearMotorPower = robotSpeed;
         rightFrontMotorPower = robotSpeed;
         rightRearMotorPower = -robotSpeed;
-        PowerTheWheels(leftFrontMotorPower, leftRearMotorPower, rightFrontMotorPower, rightRearMotorPower);
+        powerTheWheels(leftFrontMotorPower, leftRearMotorPower, rightFrontMotorPower, rightRearMotorPower);
         debug("Motors On");
         while (!(isStopRequested() || !LFMotor.isBusy() || !LRMotor.isBusy() || !RFMotor.isBusy() || !RRMotor.isBusy())) {
             delta = desiredHeading - getHeading();
@@ -666,19 +672,19 @@ public class JediMasterAutonomous extends LinearOpMode {
                     }
                 }
             }
-            PowerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
+            powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             // Show motor power while strafing:
             telemetryDashboard("Strafe");
         }
-        // Stop the robot
-        debug("End of loop");
-        PowerTheWheels(0, 0, 0, 0);
-        // Reset motor mode
-        setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         if(!opModeIsActive()) {
-            requestOpModeStop();
+            throw new EmergencyStopException("Hold");
         }
+
+        debug("End of loop");
+        powerTheWheels(0, 0, 0, 0);
+        // Reset motor mode
+        setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     /**
@@ -718,7 +724,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     /**
      * Describe this function...
      */
-    private void PowerTheWheels(double LFPower, double LRPower, double RFPower, double RRPower) {
+    private void powerTheWheels(double LFPower, double LRPower, double RFPower, double RRPower) {
         LFMotor.setPower(LFPower);
         LRMotor.setPower(LRPower);
         RFMotor.setPower(RFPower);

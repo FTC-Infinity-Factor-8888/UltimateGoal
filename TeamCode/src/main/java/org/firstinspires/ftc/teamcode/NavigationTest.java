@@ -30,6 +30,8 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -39,6 +41,10 @@ import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
 import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
@@ -128,16 +134,37 @@ public class NavigationTest extends LinearOpMode {
      */
     WebcamName webcamName = null;
 
+    BNO055IMU imu;
+    Rev2mDistanceSensor proximitySensor;
+
     private boolean targetVisible = false;
     private float phoneXRotate    = 0;
     private float phoneYRotate    = 0;
     private float phoneZRotate    = 0;
+
+    private void initializeIMU() {
+        BNO055IMU.Parameters imuParameters;
+
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+
+        telemetry.addData("Status", "Calibrating IMU...");
+        telemetry.update();
+        imuParameters = new BNO055IMU.Parameters();
+        imuParameters.mode = BNO055IMU.SensorMode.IMU;
+        imuParameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+        imuParameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        imuParameters.loggingEnabled = false;
+        imu.initialize(imuParameters);
+    }
 
     @Override public void runOpMode() {
         /*
          * Retrieve the camera we are to use.
          */
         webcamName = hardwareMap.get(WebcamName.class, "Webcam");
+
+        initializeIMU();
+        proximitySensor = hardwareMap.get(Rev2mDistanceSensor.class, "ProximitySensor");
 
         /*
          * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
@@ -277,7 +304,7 @@ public class NavigationTest extends LinearOpMode {
         // CONSEQUENTLY do not put any driving commands in this loop.
         // To restore the normal opmode structure, just un-comment the following line:
 
-        // waitForStart();
+        //waitForStart();
 
         // Note: To use the remote camera preview:
         // AFTER you hit Init on the Driver Station, use the "options menu" to select "Camera Stream"
@@ -317,6 +344,10 @@ public class NavigationTest extends LinearOpMode {
             else {
                 telemetry.addData("Visible Target", "none");
             }
+
+            telemetry.addData("Proximity", proximitySensor.getDistance(DistanceUnit.INCH));
+            Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            telemetry.addData("IMU Heading", angles.firstAngle);
             telemetry.update();
         }
 
