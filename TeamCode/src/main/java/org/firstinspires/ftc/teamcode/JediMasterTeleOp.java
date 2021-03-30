@@ -16,10 +16,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 @TeleOp(name = "JediMasterTeleOp (Blocks to Java)")
 public class JediMasterTeleOp extends LinearOpMode {
 
-    private DcMotor LFMotor;
-    private DcMotor RFMotor;
-    private DcMotor LRMotor;
-    private DcMotor RRMotor;
+    private DcMotor lfMotor;
+    private DcMotor rfMotor;
+    private DcMotor lrMotor;
+    private DcMotor rrMotor;
     private DcMotor intakeWheels;
     private BNO055IMU imu;
     private Servo dumpBed;
@@ -29,20 +29,20 @@ public class JediMasterTeleOp extends LinearOpMode {
     double leftRearMotorVelocity;
     double rightFrontMotorVelocity;
     double rightRearMotorVelocity;
-    float CurrentHeading;
+
+    float currentHeading;
     float desiredHeading;
-    double Delta;
+    double delta;
+    double deltaThreshhold;
+
     double distanceInTicks;
-    int leftFrontTargetPosition;
     double ticksPerInch;
-    int LeftRearTargetPosition;
-    int RightFrontTargetPosition;
-    double DeltaThreshhold;
-    int RightRearTargetPosition;
-    double CorrectionSpeed;
-    double LeftSpeed;
-    double RightSpeed;
-    double HoldSpeed;
+
+    double leftSpeed;
+    double rightSpeed;
+    double holdSpeed;
+    double correctionSpeed;
+
     //Maximum amount of ticks/second, and also compensate for joystick direction.
     private int maximumRobotTps = -2350;
     private int maximumHalfTps = maximumRobotTps /2;
@@ -62,10 +62,10 @@ public class JediMasterTeleOp extends LinearOpMode {
         double StrafeSpeed;
         float StrafeHeading;
 
-        LFMotor = hardwareMap.get(DcMotor.class, "LF Motor");
-        RFMotor = hardwareMap.get(DcMotor.class, "RF Motor");
-        LRMotor = hardwareMap.get(DcMotor.class, "LR Motor");
-        RRMotor = hardwareMap.get(DcMotor.class, "RR Motor");
+        lfMotor = hardwareMap.get(DcMotor.class, "LF Motor");
+        rfMotor = hardwareMap.get(DcMotor.class, "RF Motor");
+        lrMotor = hardwareMap.get(DcMotor.class, "LR Motor");
+        rrMotor = hardwareMap.get(DcMotor.class, "RR Motor");
         intakeWheels = hardwareMap.get(DcMotor.class, "IntakeWheels");
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         dumpBed = hardwareMap.get(Servo.class, "Servo1");
@@ -77,13 +77,13 @@ public class JediMasterTeleOp extends LinearOpMode {
         // Convert 75mm wheel to inches
         WheelCircumferenceInInches = 9.6125;
         ticksPerInch = ticksPerMotorRev / WheelCircumferenceInInches;
-        DeltaThreshhold = 1;
-        CorrectionSpeed = 0.1;
+        deltaThreshhold = 1;
+        correctionSpeed = 0.1;
         RobotSpeed = 0.5;
         TurnSpeed = 0.5;
-        HoldSpeed = 0.1;
+        holdSpeed = 0.1;
         StrafeSpeed = 0.5;
-        StrafeHeading = CurrentHeading;
+        StrafeHeading = currentHeading;
         initializeMotors();
         initializeIMU();
         telemetry.addData("Status", "Ready to start - v.6.0");
@@ -120,10 +120,10 @@ public class JediMasterTeleOp extends LinearOpMode {
                     rightRearMotorVelocity /= max;
                 }
 
-                ((DcMotorEx) LFMotor).setVelocity(leftFrontMotorVelocity * currentRobotTps);
-                ((DcMotorEx) LRMotor).setVelocity(leftRearMotorVelocity * currentRobotTps);
-                ((DcMotorEx) RFMotor).setVelocity(rightFrontMotorVelocity * currentRobotTps);
-                ((DcMotorEx) RRMotor).setVelocity(rightRearMotorVelocity * currentRobotTps);
+                ((DcMotorEx) lfMotor).setVelocity(leftFrontMotorVelocity * currentRobotTps);
+                ((DcMotorEx) lrMotor).setVelocity(leftRearMotorVelocity * currentRobotTps);
+                ((DcMotorEx) rfMotor).setVelocity(rightFrontMotorVelocity * currentRobotTps);
+                ((DcMotorEx) rrMotor).setVelocity(rightRearMotorVelocity * currentRobotTps);
 
                 if (gamepad1.dpad_down) {
                     dumpBed.setPosition(0);
@@ -159,20 +159,20 @@ public class JediMasterTeleOp extends LinearOpMode {
 
 
                 telemetry.addData("ServoPosition", dumpBed.getPosition());
-                telemetry.addData("LF Velocity", ((DcMotorEx) LFMotor).getVelocity());
-                telemetry.addData("RF Velocity", ((DcMotorEx) RFMotor).getVelocity());
-                telemetry.addData("LR Velocity", ((DcMotorEx) LRMotor).getVelocity());
-                telemetry.addData("RR Velocity", ((DcMotorEx) RRMotor).getVelocity());
+                telemetry.addData("LF Velocity", ((DcMotorEx) lfMotor).getVelocity());
+                telemetry.addData("RF Velocity", ((DcMotorEx) rfMotor).getVelocity());
+                telemetry.addData("LR Velocity", ((DcMotorEx) lrMotor).getVelocity());
+                telemetry.addData("RR Velocity", ((DcMotorEx) rrMotor).getVelocity());
                 telemetry.addData("Accelerator", accelerator);
                 telemetry.update();
             }
 
         }
-        CurrentHeading = getHeading();
-        Delta = desiredHeading - CurrentHeading;
+        currentHeading = getHeading();
+        delta = desiredHeading - currentHeading;
         telemetry.addData("Desired Heading", desiredHeading);
-        telemetry.addData("Current Heading", CurrentHeading);
-        telemetry.addData("Delta", Delta);
+        telemetry.addData("Current Heading", currentHeading);
+        telemetry.addData("Delta", delta);
         telemetry.update();
         sleep(5000);
     }
@@ -181,36 +181,30 @@ public class JediMasterTeleOp extends LinearOpMode {
      * Configure motor direction and modes.
      */
     private void initializeMotors() {
-        LFMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        LRMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        RFMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        RRMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        lfMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        lrMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rfMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rrMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        RFMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        RRMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        rfMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        rrMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        LFMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        LRMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        RFMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        RRMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        LFMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        LRMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        RFMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        RRMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        lfMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        lrMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rfMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rrMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        lfMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        lrMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rfMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rrMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intakeWheels.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
-    /**
-     * Describe this function...
-     */
     private void debug(String text) {
         telemetry.addData("Debug", text);
         telemetry.update();
     }
 
-    /**
-     * Describe this function...
-     */
     private void initializeIMU() {
         BNO055IMU.Parameters imuParameters;
 
@@ -239,218 +233,10 @@ public class JediMasterTeleOp extends LinearOpMode {
     /**
      * Describe this function...
      */
-    private void Turn(double TurnSpeed, float Heading) {
-        desiredHeading = Heading;
-        CurrentHeading = getHeading();
-        Delta = desiredHeading - CurrentHeading;
-        while (!(isStopRequested() || Math.abs(Delta) <= DeltaThreshhold)) {
-            if (Delta > 0) {
-                leftFrontMotorVelocity = -TurnSpeed;
-                leftRearMotorVelocity = -TurnSpeed;
-                rightFrontMotorVelocity = TurnSpeed;
-                rightRearMotorVelocity = TurnSpeed;
-            } else {
-                leftFrontMotorVelocity = TurnSpeed;
-                leftRearMotorVelocity = TurnSpeed;
-                rightFrontMotorVelocity = -TurnSpeed;
-                rightRearMotorVelocity = -TurnSpeed;
-            }
-            PowerTheWheels(leftFrontMotorVelocity, leftRearMotorVelocity, rightFrontMotorVelocity, rightRearMotorVelocity);
-            telemetry.addData("Desired Heading", desiredHeading);
-            telemetry.addData("Current Heading", CurrentHeading);
-            telemetry.addData("Delta", Delta);
-            telemetry.addData("TurnSpeed", TurnSpeed);
-            telemetry.addData("LFPower", LFMotor.getPower());
-            telemetry.addData("LRPower", LRMotor.getPower());
-            telemetry.addData("RFPower", RFMotor.getPower());
-            telemetry.addData("RRPower", RRMotor.getPower());
-            telemetry.update();
-            CurrentHeading = getHeading();
-            Delta = desiredHeading - CurrentHeading;
-        }
-        PowerTheWheels(0, 0, 0, 0);
-    }
-
-    /**
-     * Describe this function...
-     */
-
-    /**
-     * Drive in a straight line.
-     * @param speed Motor speed, -1 to 1. Negative number moves robot backward.
-     * @param distance How far to move, in inches.
-     */
-    private void drive(double speed, double distance) {
-        debug("Drive is called");
-        // Drive should be straight along the heading
-        desiredHeading = getHeading();
-        debug("Heading " + desiredHeading);
-        distanceInTicks = distance * ticksPerInch;
-        leftFrontTargetPosition = (int) (LFMotor.getCurrentPosition() + distanceInTicks);
-        LeftRearTargetPosition = (int) (LRMotor.getCurrentPosition() + distanceInTicks);
-        RightFrontTargetPosition = (int) (RFMotor.getCurrentPosition() + distanceInTicks);
-        RightRearTargetPosition = (int) (RRMotor.getCurrentPosition() + distanceInTicks);
-        LFMotor.setTargetPosition(leftFrontTargetPosition);
-        LRMotor.setTargetPosition(LeftRearTargetPosition);
-        RFMotor.setTargetPosition(RightFrontTargetPosition);
-        RRMotor.setTargetPosition(RightRearTargetPosition);
-        LFMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        LRMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        RFMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        RRMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        LeftSpeed = speed;
-        RightSpeed = speed;
-        LFMotor.setPower(LeftSpeed);
-        LRMotor.setPower(LeftSpeed);
-        RFMotor.setPower(RightSpeed);
-        RRMotor.setPower(RightSpeed);
-        debug("Motors On");
-        telemetry.addData("LFPower", LFMotor.getPower());
-        telemetry.addData("LRPower", LRMotor.getCurrentPosition());
-        telemetry.addData("RFPower", RFMotor.getCurrentPosition());
-        telemetry.addData("RRPower", RRMotor.getPower());
-        telemetry.update();
-        if (isStopRequested()) {
-            debug("Stop is requested");
-        } else {
-            if (!LFMotor.isBusy()) {
-                debug("LF motor is not busy");
-            } else {
-                if (!LRMotor.isBusy()) {
-                    debug("LR motor is not busy");
-                } else {
-                    if (!RFMotor.isBusy()) {
-                        debug("RF motor is not busy");
-                    } else {
-                        if (!RRMotor.isBusy()) {
-                            debug("RR motor is not busy");
-                        } else {
-                            debug("Loop starting");
-                        }
-                    }
-                }
-            }
-        }
-        sleep(1000);
-        while (!(isStopRequested() || !LFMotor.isBusy() || !LRMotor.isBusy() || !RFMotor.isBusy() || !RRMotor.isBusy())) {
-            debug("Loop started");
-            CurrentHeading = getHeading();
-            Delta = desiredHeading - CurrentHeading;
-            if (Math.abs(Delta) >= DeltaThreshhold) {
-                if (Delta > 0) {
-                    if (distance > 0) {
-                        RightSpeed = speed + CorrectionSpeed;
-                        LeftSpeed = speed - CorrectionSpeed;
-                    } else {
-                        RightSpeed = speed - CorrectionSpeed;
-                        LeftSpeed = speed + CorrectionSpeed;
-                    }
-                } else {
-                    if (distance > 0) {
-                        RightSpeed = speed - CorrectionSpeed;
-                        LeftSpeed = speed + CorrectionSpeed;
-                    } else {
-                        RightSpeed = speed + CorrectionSpeed;
-                        LeftSpeed = speed - CorrectionSpeed;
-                    }
-                }
-            }
-            PowerTheWheels(LeftSpeed, LeftSpeed, RightSpeed, RightSpeed);
-            // TODO: Add telemetry information
-            telemetry.addData("LFPower", LFMotor.getPower());
-            telemetry.addData("LRPower", LRMotor.getPower());
-            telemetry.addData("RFPower", RFMotor.getPower());
-            telemetry.addData("RRPower", RRMotor.getPower());
-            telemetry.update();
-        }
-        // Stop the robot
-        debug("End of loop");
-        PowerTheWheels(0, 0, 0, 0);
-        // Reset motor mode
-        LFMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        LRMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        RFMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        RRMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-    }
-
-    /**
-     * Describe this function...
-     */
-    private void Strafe(double speed, double distance) {
-        debug("Strafe is called");
-        desiredHeading = getHeading();
-        distanceInTicks = distance * ticksPerInch;
-        leftFrontTargetPosition = (int) (LFMotor.getCurrentPosition() + distanceInTicks);
-        LeftRearTargetPosition = (int) (LRMotor.getCurrentPosition() + distanceInTicks);
-        RightFrontTargetPosition = (int) (RFMotor.getCurrentPosition() + distanceInTicks);
-        RightRearTargetPosition = (int) (RRMotor.getCurrentPosition() + distanceInTicks);
-        LFMotor.setTargetPosition(-leftFrontTargetPosition);
-        LRMotor.setTargetPosition(LeftRearTargetPosition);
-        RFMotor.setTargetPosition(RightFrontTargetPosition);
-        RRMotor.setTargetPosition(-RightRearTargetPosition);
-        LFMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        LRMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        RFMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        RRMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        leftFrontMotorVelocity = -speed;
-        leftRearMotorVelocity = speed;
-        rightFrontMotorVelocity = speed;
-        rightRearMotorVelocity = -speed;
-        PowerTheWheels(leftFrontMotorVelocity, leftRearMotorVelocity, rightFrontMotorVelocity, rightRearMotorVelocity);
-        debug("Motors On");
-        telemetry.addData("LFPower ", LFMotor.getPower());
-        telemetry.addData("LRPower ", LRMotor.getTargetPosition());
-        telemetry.addData("RFPower ", RFMotor.getTargetPosition());
-        telemetry.addData("RRPower ", RRMotor.getPower());
-        telemetry.update();
-        while (!(isStopRequested() || !LFMotor.isBusy() || !LRMotor.isBusy() || !RFMotor.isBusy() || !RRMotor.isBusy())) {
-            debug("Loop started");
-            CurrentHeading = getHeading();
-            Delta = desiredHeading - CurrentHeading;
-            if (Math.abs(Delta) >= DeltaThreshhold) {
-                if (Delta > 0) {
-                    if (distance > 0) {
-                        RightSpeed = speed + CorrectionSpeed;
-                        LeftSpeed = speed - CorrectionSpeed;
-                    } else {
-                        RightSpeed = speed - CorrectionSpeed;
-                        LeftSpeed = speed + CorrectionSpeed;
-                    }
-                } else {
-                    if (distance > 0) {
-                        RightSpeed = speed - CorrectionSpeed;
-                        LeftSpeed = speed + CorrectionSpeed;
-                    } else {
-                        RightSpeed = speed + CorrectionSpeed;
-                        LeftSpeed = speed - CorrectionSpeed;
-                    }
-                }
-            }
-            PowerTheWheels(LeftSpeed, LeftSpeed, RightSpeed, RightSpeed);
-            // TODO: Add telemetry information
-            telemetry.addData("LFPower", LFMotor.getPower());
-            telemetry.addData("LRPower", LRMotor.getPower());
-            telemetry.addData("RFPower", RFMotor.getPower());
-            telemetry.addData("RRPower", RRMotor.getPower());
-            telemetry.update();
-        }
-        // Stop the robot
-        debug("End of loop");
-        PowerTheWheels(0, 0, 0, 0);
-        // Reset motor mode
-        LFMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        LRMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        RFMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        RRMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-    }
-
-    /**
-     * Describe this function...
-     */
     private void PowerTheWheels(double LFPower, double LRPower, double RFPower, double RRPower) {
-        LFMotor.setPower(LFPower);
-        LRMotor.setPower(LRPower);
-        RFMotor.setPower(RFPower);
-        RRMotor.setPower(RRPower);
+        lfMotor.setPower(LFPower);
+        lrMotor.setPower(LRPower);
+        rfMotor.setPower(RFPower);
+        rrMotor.setPower(RRPower);
     }
 }
