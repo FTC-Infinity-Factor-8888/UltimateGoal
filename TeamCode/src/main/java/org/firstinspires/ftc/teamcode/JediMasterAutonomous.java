@@ -75,8 +75,6 @@ public class JediMasterAutonomous extends LinearOpMode {
 
     private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
     private PositionAndHeading tower = new PositionAndHeading(69,36,0,0);
-    private PositionAndHeading line = new PositionAndHeading(0,
-            lastKnownPositionAndHeading.yPosition, 0, 0);
 
     private void AllSix() {
         if (startLine == 1) {
@@ -331,7 +329,10 @@ public class JediMasterAutonomous extends LinearOpMode {
                 sleep(3000);
                 driveTo(targetZoneCoordinates);
                 driveTo(tower);
+                sleep(1000);
                 dumpBed.setPosition(0);
+                PositionAndHeading line = new PositionAndHeading
+                        (0,lastKnownPositionAndHeading.yPosition,0,0);
                 driveTo(line);
             }
             intakeLift.setPosition(0.0);
