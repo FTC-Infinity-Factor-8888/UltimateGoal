@@ -230,9 +230,6 @@ public class JediMasterTeleOp extends LinearOpMode {
         return angles.firstAngle;
     }
 
-    /**
-     * Describe this function...
-     */
     private void PowerTheWheels(double LFPower, double LRPower, double RFPower, double RRPower) {
         lfMotor.setPower(LFPower);
         lrMotor.setPower(LRPower);

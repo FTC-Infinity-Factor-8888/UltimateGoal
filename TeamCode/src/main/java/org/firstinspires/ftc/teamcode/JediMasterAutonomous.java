@@ -32,6 +32,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     private final PositionAndHeading TARGET_ZONE_C = new PositionAndHeading(58, 58, 0,0);
 
     private Servo intakeLift;
+    private Servo dumpBed;
     private DcMotor LFMotor;
     private DcMotor RFMotor;
     private DcMotor LRMotor;
@@ -73,10 +74,10 @@ public class JediMasterAutonomous extends LinearOpMode {
     double holdTime;
 
     private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
+    private PositionAndHeading tower = new PositionAndHeading(69,36,0,0);
+    private PositionAndHeading line = new PositionAndHeading(0,
+            lastKnownPositionAndHeading.yPosition, 0, 0);
 
-    /**
-     * Describe this function...
-     */
     private void AllSix() {
         if (startLine == 1) {
             if (targetZone == 1) {
@@ -239,23 +240,11 @@ public class JediMasterAutonomous extends LinearOpMode {
         telemetryDashboard("Drive To");
         sleep(1000);
 
-        /*
-        // How far does the robot need to drive + heading correction?
-        if (targetDist <  30) {
-            drive(targetDist);
-            telemetryDashboard("Drive To");
-            sleep(1000);
-        }
-        else {
-            drive(targetDist / 2);
-            driveTo(target);
-            telemetryDashboard("Drive To");
-            sleep(1000);
-        }
-        */
         drive(targetDist);
         telemetryDashboard("Drive To");
         sleep(1000);
+
+
     }
 
     private double normalizeHeading(double heading) {
@@ -283,6 +272,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         double WheelCircumferenceInInches;
 
         intakeLift = hardwareMap.get(Servo.class, "IntakeLift");
+        dumpBed = hardwareMap.get(Servo.class, "Servo1");
         LFMotor = hardwareMap.get(DcMotor.class, "LF Motor");
         RFMotor = hardwareMap.get(DcMotor.class, "RF Motor");
         LRMotor = hardwareMap.get(DcMotor.class, "LR Motor");
@@ -340,6 +330,9 @@ public class JediMasterAutonomous extends LinearOpMode {
                 telemetryDashboard("runOpMode");
                 sleep(3000);
                 driveTo(targetZoneCoordinates);
+                driveTo(tower);
+                dumpBed.setPosition(0);
+                driveTo(line);
             }
             intakeLift.setPosition(0.0);
             }
@@ -363,9 +356,6 @@ public class JediMasterAutonomous extends LinearOpMode {
         RRMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
-    /**
-     * Describe this function...
-     */
     private void debug(String text) {
         System.out.println("Debug" + text);
     }
@@ -424,9 +414,6 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
     }
 
-    /**
-     * Describe this function...
-     */
     private void initializeIMU() {
         BNO055IMU.Parameters imuParameters;
 
@@ -565,9 +552,6 @@ public class JediMasterAutonomous extends LinearOpMode {
         setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
-    /**
-     * Describe this function...
-     */
     private void turn(double Heading) {
         desiredHeading = Heading;
 
@@ -602,9 +586,6 @@ public class JediMasterAutonomous extends LinearOpMode {
         hold(Heading);
     }
 
-    /**
-     * Describe this function...
-     */
     private void hold(double Heading) {
         ElapsedTime Timer;
 
@@ -638,9 +619,6 @@ public class JediMasterAutonomous extends LinearOpMode {
         sleep(1000);
     }
 
-    /**
-     * Describe this function...
-     */
     private void strafe(double distance) {
         debug("strafe is called");
         desiredHeading = getHeading();
@@ -721,9 +699,6 @@ public class JediMasterAutonomous extends LinearOpMode {
         setMotorMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
-    /**
-     * Describe this function...
-     */
     private void powerTheWheels(double LFPower, double LRPower, double RFPower, double RRPower) {
         LFMotor.setPower(LFPower);
         LRMotor.setPower(LRPower);
