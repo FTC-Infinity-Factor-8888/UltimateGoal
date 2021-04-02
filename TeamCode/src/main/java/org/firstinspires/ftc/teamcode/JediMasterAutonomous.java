@@ -160,10 +160,7 @@ public class JediMasterAutonomous extends LinearOpMode {
 
         leftSpeed = robotSpeed;
         rightSpeed = robotSpeed;
-        LFMotor.setPower(leftSpeed);
-        LRMotor.setPower(leftSpeed);
-        RFMotor.setPower(rightSpeed);
-        RRMotor.setPower(rightSpeed);
+        powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
         debug("Motors On");
 
         while (opModeIsActive() && !(LFMotor.getCurrentPosition() > LfMotorMaximumTicks ||
@@ -435,7 +432,9 @@ public class JediMasterAutonomous extends LinearOpMode {
      */
 
     private double getHeading() {
-        return lastKnownPositionAndHeading.heading;
+        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX,
+                AngleUnit.DEGREES);
+        return angles.firstAngle;
     }
 
     private void setMotorMode(DcMotor.RunMode mode) {
@@ -449,7 +448,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         telemetry.addData( method, "SL: %.0f, TZ: %.0f", startLine, targetZone);
 
         telemetry.addData("Heading", "Desired: %.0f, Current: %.0f, Delta: %.0f",
-                desiredHeading, lastKnownPositionAndHeading.heading, delta);
+                desiredHeading, getHeading(), delta);
 
         telemetry.addData("Power", "LF: %.1f, LR: %.1f, RF: %.1f, RR: %.1f",
                 LFMotor.getPower(), LRMotor.getPower(), RFMotor.getPower(), RRMotor.getPower());
@@ -505,10 +504,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
         leftSpeed = robotSpeed;
         rightSpeed = robotSpeed;
-        LFMotor.setPower(leftSpeed);
-        LRMotor.setPower(leftSpeed);
-        RFMotor.setPower(rightSpeed);
-        RRMotor.setPower(rightSpeed);
+        powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
         debug("Motors On");
         telemetry.update();
         while (opModeIsActive() && LFMotor.isBusy() && LRMotor.isBusy() && RFMotor.isBusy() &&
