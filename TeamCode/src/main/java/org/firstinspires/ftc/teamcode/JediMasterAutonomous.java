@@ -45,7 +45,6 @@ public class JediMasterAutonomous extends LinearOpMode {
     private Robot robot;
     private ObjectDetector ringDetector;
 
-    boolean robotCanKeepGoing;
     double startLine = 1; //default to the first start line
     double targetZone = 1; //if countTheRings doesn't see anything, the value is target zone 1
     PositionAndHeading startLineCoordinates = START_LINE_1;
@@ -81,7 +80,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     private int maximumRobotTps = 2350;
     private int maximumHalfTps = maximumRobotTps / 2;
     private int currentRobotTps = maximumHalfTps;
-    private int correctionTps = (int) (maximumRobotTps * 0.01);
+    private int correctionTps = (int) (maximumRobotTps * 0.02);
 
     private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
     private PositionAndHeading tower = new PositionAndHeading(69,36,0,0);
@@ -189,26 +188,29 @@ public class JediMasterAutonomous extends LinearOpMode {
                 /*rightSpeed = robotSpeed + percentDelta * delta;
                 leftSpeed = robotSpeed - percentDelta * delta;*/
 
-                if (delta - priorDelta > 0) {
+                if (Math.abs(delta) - priorDelta > 0) {
                     currentRobotTps -= correctionTps;
                     if (currentRobotTps < 0) {
                         currentRobotTps = 0;
-                        priorDelta = delta;
                     }
                 }
-                else if (delta - priorDelta > 0) {
-                    if (delta > 0) {
-                        rightSpeed = robotSpeed + correctionSpeed;
-                        leftSpeed = robotSpeed - correctionSpeed;
-                        priorDelta = delta;
+                else if (Math.abs(delta) - priorDelta < 0) {
+                    currentRobotTps += correctionTps;
+                    if (currentRobotTps > maximumRobotTps) {
+                        currentRobotTps = maximumRobotTps;
                     }
-                    else {
-                        rightSpeed = robotSpeed - correctionSpeed;
-                        leftSpeed = robotSpeed + correctionSpeed;
-                        priorDelta = delta;
-                    }
+                }
+
+                if (delta > 0) {
+                    rightSpeed = robotSpeed + correctionSpeed;
+                    leftSpeed = robotSpeed - correctionSpeed;
+                }
+                else {
+                    rightSpeed = robotSpeed - correctionSpeed;
+                    leftSpeed = robotSpeed + correctionSpeed;
                 }
             }
+            priorDelta = Math.abs(delta);
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             // Show motor power while driving:
             telemetryDashboard("Navigation Probe");
@@ -263,12 +265,9 @@ public class JediMasterAutonomous extends LinearOpMode {
         // turn "A" degrees
         turn(targetHeading);
         telemetryDashboard("Drive To");
-        sleep(1000);
 
         drive(targetDist);
         telemetryDashboard("Drive To");
-        sleep(1000);
-
 
     }
 
@@ -306,7 +305,6 @@ public class JediMasterAutonomous extends LinearOpMode {
         proximitySensor = hardwareMap.get(Rev2mDistanceSensor.class, "ProximitySensor");
 
         // Initialize variables
-        robotCanKeepGoing = true;
         ticksPerMotorRev = 530.3;
         // Convert 75mm wheel to inches
         WheelCircumferenceInInches = 9.6125;
@@ -329,11 +327,11 @@ public class JediMasterAutonomous extends LinearOpMode {
             telemetry.addData("Solution", "Diverting to TargetZone 1");
         }
         System.out.println("Vuforia initialized, NOT starting OpenCV next");
-        //ringDetector.initOpenCv();
 
         //Make robot legal-size by raising intake
         intakeLift.setPosition(1.0);
         telemetry.addData("Status", "Ready to start - v1.3.5");
+        telemetry.addData("ProximitySensor", proximitySensor.getDistance(DistanceUnit.INCH));
         telemetry.update();
 
         waitForStart();
@@ -352,12 +350,10 @@ public class JediMasterAutonomous extends LinearOpMode {
             Position position = new Position(DistanceUnit.INCH, startLineCoordinates.xPosition, startLineCoordinates.yPosition, 0, System.nanoTime());
             imu.startAccelerationIntegration(position, null, 1);
             navigationProbe(112);
-            if(lastKnownPositionAndHeading.valueSource == VUFORIA) {
+            if (lastKnownPositionAndHeading.valueSource == VUFORIA) {
                 telemetryDashboard("runOpMode");
-                sleep(3000);
                 driveTo(targetZoneCoordinates);
                 driveTo(tower);
-                sleep(1000);
                 dumpBed.setPosition(0);
                 PositionAndHeading line = new PositionAndHeading
                         (0,lastKnownPositionAndHeading.yPosition,0,0);
@@ -366,7 +362,9 @@ public class JediMasterAutonomous extends LinearOpMode {
             intakeLift.setPosition(0.0);
             }
             catch(EmergencyStopException e){
-                // QUIT OUT OF THE PROGRAM RIGHT NOW!!!
+                // FORCE QUIT THE PROGRAM RIGHT NOW!!!
+                // SHUT IT DOWN!!!
+                // OVERRIDE EVERYTHING!!!
             }
         }
     }
@@ -484,6 +482,9 @@ public class JediMasterAutonomous extends LinearOpMode {
         telemetry.addData("Power", "LF: %.1f, LR: %.1f, RF: %.1f, RR: %.1f",
                 lfMotor.getPower(), lrMotor.getPower(), rfMotor.getPower(), rrMotor.getPower());
 
+        telemetry.addData("MaximumTPS", maximumRobotTps);
+        telemetry.addData("HalfTPS", maximumHalfTps); // Sanity check. This should not change.
+
         List<NavigationInfo> allVisibleTargets = ringDetector.getNavigationInfo();
         if (allVisibleTargets != null) {
             for (NavigationInfo visibleTarget : allVisibleTargets) {
@@ -528,7 +529,7 @@ public class JediMasterAutonomous extends LinearOpMode {
      * @param distance How far to move, in inches.
      */
     private void drive(double distance) {
-        debug("Drive is called");
+        debug("Drive is called to go " + distance + " inches.");
         // Drive should be straight along the heading
         double desiredHeading = getHeading();
         debug("Heading " + desiredHeading);
