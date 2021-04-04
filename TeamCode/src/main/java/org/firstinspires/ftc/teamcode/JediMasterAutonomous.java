@@ -81,7 +81,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     private int maximumRobotTps = 2350;
     private int maximumHalfTps = maximumRobotTps / 2;
     private int currentRobotTps = maximumHalfTps;
-    private int correctionTps = (int) (maximumRobotTps * 0.05);
+    private int correctionTps = (int) (maximumRobotTps * 0.01);
 
     private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
     private PositionAndHeading tower = new PositionAndHeading(69,36,0,0);
@@ -193,15 +193,20 @@ public class JediMasterAutonomous extends LinearOpMode {
                     currentRobotTps -= correctionTps;
                     if (currentRobotTps < 0) {
                         currentRobotTps = 0;
+                        priorDelta = delta;
                     }
                 }
-                if (delta > 0) {
-                    rightSpeed = robotSpeed + correctionSpeed;
-                    leftSpeed = robotSpeed - correctionSpeed;
-                }
-                else {
-                    rightSpeed = robotSpeed - correctionSpeed;
-                    leftSpeed = robotSpeed + correctionSpeed;
+                else if (delta - priorDelta > 0) {
+                    if (delta > 0) {
+                        rightSpeed = robotSpeed + correctionSpeed;
+                        leftSpeed = robotSpeed - correctionSpeed;
+                        priorDelta = delta;
+                    }
+                    else {
+                        rightSpeed = robotSpeed - correctionSpeed;
+                        leftSpeed = robotSpeed + correctionSpeed;
+                        priorDelta = delta;
+                    }
                 }
             }
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
