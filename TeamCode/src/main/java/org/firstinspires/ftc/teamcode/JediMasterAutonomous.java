@@ -40,7 +40,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     private DcMotor lrMotor;
     private DcMotor rrMotor;
     private BNO055IMU imu;
-    Rev2mDistanceSensor proximitySensor;
+    private Rev2mDistanceSensor proximitySensor;
 
     private Robot robot;
     private ObjectDetector ringDetector;
@@ -54,7 +54,6 @@ public class JediMasterAutonomous extends LinearOpMode {
     double desiredHeading;
     double delta;
     double deltaThreshold;
-    double percentDelta = 0.5 * delta;
 
     double leftFrontMotorPower;
     double leftRearMotorPower;
@@ -183,32 +182,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 proximitySensor.getDistance(DistanceUnit.INCH) < 6)) {
 
             debug("Loop started");
-            double currentHeading = getHeading();
-            delta = desiredHeading - currentHeading;
-            if (Math.abs(delta) >= deltaThreshold) {
-                /*rightSpeed = robotSpeed + percentDelta * delta;
-                leftSpeed = robotSpeed - percentDelta * delta;*/
-
-                if (delta - priorDelta > 0) {
-                    currentRobotTps -= correctionTps;
-                    if (currentRobotTps < 0) {
-                        currentRobotTps = 0;
-                        priorDelta = delta;
-                    }
-                }
-                else if (delta - priorDelta > 0) {
-                    if (delta > 0) {
-                        rightSpeed = robotSpeed + correctionSpeed;
-                        leftSpeed = robotSpeed - correctionSpeed;
-                        priorDelta = delta;
-                    }
-                    else {
-                        rightSpeed = robotSpeed - correctionSpeed;
-                        leftSpeed = robotSpeed + correctionSpeed;
-                        priorDelta = delta;
-                    }
-                }
-            }
+            priorDelta = adjustSpeed(112, desiredHeading, priorDelta);
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             // Show motor power while driving:
             telemetryDashboard("Navigation Probe");
@@ -224,6 +198,49 @@ public class JediMasterAutonomous extends LinearOpMode {
         if(!opModeIsActive()) {
             throw new EmergencyStopException("Navigation Probe");
         }
+    }
+
+    /**
+     * TODO: Add javadoc
+     * @param distance
+     * @param desiredHeading
+     * @param priorDelta
+     * @return
+     */
+    private double adjustSpeed(double distance, double desiredHeading, double priorDelta) {
+        double currentHeading = getHeading();
+        delta = desiredHeading - currentHeading;
+        if (Math.abs(delta) >= deltaThreshold) {
+            if (delta - priorDelta > 0) {
+                currentRobotTps -= correctionTps;
+                if (currentRobotTps < 0) {
+                    currentRobotTps = 0;
+                }
+            }
+            else if (delta - priorDelta > 0) {
+                if (delta > 0) {
+                    if (distance > 0) {
+                        rightSpeed = robotSpeed + correctionSpeed;
+                        leftSpeed = robotSpeed - correctionSpeed;
+                    }
+                    else {
+                        rightSpeed = robotSpeed - correctionSpeed;
+                        leftSpeed = robotSpeed + correctionSpeed;
+                    }
+                }
+                else {
+                    if (distance > 0) {
+                        rightSpeed = robotSpeed - correctionSpeed;
+                        leftSpeed = robotSpeed + correctionSpeed;
+                    }
+                    else {
+                        rightSpeed = robotSpeed + correctionSpeed;
+                        leftSpeed = robotSpeed - correctionSpeed;
+                    }
+                }
+            }
+        }
+        return delta;
     }
 
     private void driveTo(PositionAndHeading target) {
@@ -742,14 +759,24 @@ public class JediMasterAutonomous extends LinearOpMode {
             rrPower /= max;
         }
 
-        double lfVelocity = lfPower * currentRobotTps;
-        double lrVelocity = lrPower * currentRobotTps;
-        double rfVelocity = rfPower * currentRobotTps;
-        double rrVelocity = rrPower * currentRobotTps;
+        if (lfMotor.getMode().equals(DcMotor.RunMode.RUN_USING_ENCODER)) {
+            double lfVelocity = lfPower * currentRobotTps;
+            double lrVelocity = lrPower * currentRobotTps;
+            double rfVelocity = rfPower * currentRobotTps;
+            double rrVelocity = rrPower * currentRobotTps;
 
-        ((DcMotorEx) lfMotor).setVelocity(lfVelocity);
-        ((DcMotorEx) lrMotor).setVelocity(lrVelocity);
-        ((DcMotorEx) rfMotor).setVelocity(rfVelocity);
-        ((DcMotorEx) rrMotor).setVelocity(rrVelocity);
+            ((DcMotorEx) lfMotor).setVelocity(lfVelocity);
+            ((DcMotorEx) lrMotor).setVelocity(lrVelocity);
+            ((DcMotorEx) rfMotor).setVelocity(rfVelocity);
+            ((DcMotorEx) rrMotor).setVelocity(rrVelocity);
+        }
+        else {
+            // We assume that we will be using RUN_TO_POSITION mode.
+
+            lfMotor.setPower(lfPower);
+            lrMotor.setPower(lrPower);
+            rfMotor.setPower(rfPower);
+            rrMotor.setPower(rrPower);
+        }
     }
 }
