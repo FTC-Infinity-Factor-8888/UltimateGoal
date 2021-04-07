@@ -12,6 +12,7 @@ public class PositionAndHeading {
     public final static int NOT_INITIALIZED = 0;
     public final static int VUFORIA = 1;
     public final static int IMU = 2;
+    public final static int FIXED = 3;
 
     int valueSource;
 
