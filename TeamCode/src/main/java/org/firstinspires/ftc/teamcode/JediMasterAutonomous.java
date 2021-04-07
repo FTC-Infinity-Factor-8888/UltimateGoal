@@ -85,6 +85,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     private PositionAndHeading tower = new PositionAndHeading(69,36,0,0);
 
     private void AllSix() {
+        //Looks like we are using this after all
         if (startLine == 1) {
             if (targetZone == 1) {
                 //1a
