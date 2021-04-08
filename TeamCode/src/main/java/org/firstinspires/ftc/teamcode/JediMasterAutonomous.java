@@ -52,7 +52,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     PositionAndHeading targetZoneCoordinates = TARGET_ZONE_A;
 
     // Instance variables so we can display them on the dashboard
-    double desiredHeading;
+    double desiredPolarHeading;
     double delta;
     double deltaThreshold;
 
@@ -155,8 +155,8 @@ public class JediMasterAutonomous extends LinearOpMode {
     private void navigationProbe(final double maximumDistance){
         debug("navigationProbe is called");
         // Drive should be straight along the heading
-        desiredHeading = getHeading();
-        debug("Heading " + desiredHeading);
+        desiredPolarHeading = getImuHeading();
+        debug("Heading " + desiredPolarHeading);
 
         // Makes sure we're in Encoder Mode
         setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -183,7 +183,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 proximitySensor.getDistance(DistanceUnit.INCH) < 6)) {
 
             debug("Loop started");
-            priorDelta = adjustSpeed(112, desiredHeading, priorDelta);
+            priorDelta = adjustSpeed(112, desiredPolarHeading, priorDelta);
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             // Show motor power while driving:
             telemetryDashboard("Navigation Probe");
@@ -204,13 +204,13 @@ public class JediMasterAutonomous extends LinearOpMode {
     /**
      * TODO: Add javadoc
      * @param distance
-     * @param desiredHeading
+     * @param desiredPolarHeading is in Polar Corrdinates (0* is along the positive x axis).
      * @param priorDelta
      * @return
      */
-    private double adjustSpeed(double distance, double desiredHeading, double priorDelta) {
-        double currentHeading = getHeading();
-        delta = normalizeHeading(desiredHeading - currentHeading);
+    private double adjustSpeed(double distance, double desiredPolarHeading, double priorDelta) {
+        double currentPolarHeading = getPolarHeading();
+        delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
         if (Math.abs(delta) >= deltaThreshold) {
             if (Math.abs(delta) - priorDelta > 0) {
                 robotSpeed -= speedAdjust;
@@ -280,7 +280,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
 
         // How far does the robot need to turn.
-        targetHeading = normalizeHeading(targetHeading - getHeading());
+        targetHeading = normalizeHeading(targetHeading - getImuHeading());
 
         // turn "A" degrees
         turn(targetHeading);
@@ -290,7 +290,7 @@ public class JediMasterAutonomous extends LinearOpMode {
 
         if (lastKnownPositionAndHeading.valueSource != VUFORIA) {
             // If we don't see a Vuforia target, assume we are at the coordinates we wanted to reach
-            lastKnownPositionAndHeading = new PositionAndHeading(target.xPosition, target.yPosition, getHeading(), FIXED);
+            lastKnownPositionAndHeading = new PositionAndHeading(target.xPosition, target.yPosition, getImuHeading(), FIXED);
         }
         telemetryDashboard("Drive To");
 
@@ -380,11 +380,17 @@ public class JediMasterAutonomous extends LinearOpMode {
                     telemetryDashboard("runOpMode");
                     //where are we?
                     hold(0);
-                    
+                    telemetryDashboard("Square to tower");
+                    strafe(lastKnownPositionAndHeading.yPosition - tower.yPosition);
+                    telemetryDashboard("Strafe in front");
+                    hold(0);
+                    telemetryDashboard("Square to tower");
+                    drive(tower.xPosition - lastKnownPositionAndHeading.xPosition);
                     dumpBed.setPosition(0);
-                    PositionAndHeading line = new PositionAndHeading
-                            (0, lastKnownPositionAndHeading.yPosition, 0, 0);
-                    driveTo(line);
+                    sleep(1000);
+                    telemetryDashboard("Dumped rings");
+                    drive(-19 - lastKnownPositionAndHeading.xPosition);
+                    telemetryDashboard("Parked on line");
                 }
                 intakeLift.setPosition(0.0);
             }
@@ -489,11 +495,19 @@ public class JediMasterAutonomous extends LinearOpMode {
      * Angles are positive in a counter-clockwise direction.
      */
 
-    private double getHeading() {
+    private double getImuHeading() {
         Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX,
                 AngleUnit.DEGREES);
         // Add 90 degrees, because we want to match a polar coordinate system, and Vuforia
-        return angles.firstAngle + 90;
+        return angles.firstAngle;
+    }
+
+    private double getPolarHeading() {
+         return getImuHeading() + 90;
+    }
+
+    private double getPolarHeading(double imuHeading) {
+        return imuHeading + 90;
     }
 
     private void setMotorMode(DcMotor.RunMode mode) {
@@ -508,7 +522,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 proximitySensor.getDistance(DistanceUnit.INCH));
 
         telemetry.addData("Heading", "Desired: %.0f, Current: %.0f, Delta: %.0f",
-                desiredHeading, getHeading(), delta);
+                desiredPolarHeading, getImuHeading(), delta);
 
         telemetry.addData("Target", "LF: %d, LR: %d, RF: %d, RR: %d",
                 lfMotor.getTargetPosition(), lrMotor.getTargetPosition(), rfMotor.getTargetPosition(), rrMotor.getTargetPosition());
@@ -543,7 +557,7 @@ public class JediMasterAutonomous extends LinearOpMode {
             telemetry.addData("Visible Target", "none");
             //IMU takes over
             Position position = imu.getPosition().toUnit(DistanceUnit.INCH);
-            double heading = getHeading();
+            double heading = getImuHeading();
             lastKnownPositionAndHeading = new PositionAndHeading(position.x, position.y, heading, IMU);
             telemetry.addData("IMU Position, Heading", "(%.1f, %.1f), %.0f", position.x, position.y,
                     heading);
@@ -558,20 +572,20 @@ public class JediMasterAutonomous extends LinearOpMode {
     private void drive(double distance) {
         debug("Drive is called to go " + distance + " inches.");
         // Drive should be straight along the heading
-        desiredHeading = getHeading();
-        debug("Heading " + desiredHeading);
+        desiredPolarHeading = getPolarHeading();
+        debug("PolarHeading " + desiredPolarHeading);
         setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
         leftSpeed = robotSpeed;
         rightSpeed = robotSpeed;
         powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
-        telemetryDashboard("DriveStart(" + distance + ")");
+        telemetryDashboard("Drive(" + distance + ")");
 
         debug("Motors On");
         double priorDelta = 0.0;
         while (opModeIsActive() && lfMotor.isBusy() && lrMotor.isBusy() && rfMotor.isBusy() &&
                 rrMotor.isBusy()) {
             debug("Loop started");
-            priorDelta = adjustSpeed(distance, desiredHeading, priorDelta);
+            priorDelta = adjustSpeed(distance, desiredPolarHeading, priorDelta);
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             // Show motor power while driving:
             telemetryDashboard("Drive(" + distance + ")");
@@ -588,11 +602,15 @@ public class JediMasterAutonomous extends LinearOpMode {
         powerTheWheels(0, 0, 0, 0);
     }
 
-    private void turn(double heading) {
-        desiredHeading = heading;
+    /**
+     * Turn turns the robot till it is facing imuHeading.
+     * @param imuHeading Heading is in IMU coordinates (0* points to the tower goal).
+     */
+    private void turn(double imuHeading) {
+        desiredPolarHeading = getPolarHeading(imuHeading);
 
-        double currentHeading = getHeading();
-        delta = normalizeHeading(desiredHeading - currentHeading);
+        double currentPolarHeading = getPolarHeading();
+        delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
         while (opModeIsActive() && Math.abs(delta) > deltaThreshold) {
             if (delta > 0) {
                 leftFrontMotorPower = -turnSpeed;
@@ -607,9 +625,9 @@ public class JediMasterAutonomous extends LinearOpMode {
                 rightRearMotorPower = -turnSpeed;
             }
             powerTheWheels(leftFrontMotorPower, leftRearMotorPower, rightFrontMotorPower, rightRearMotorPower);
-            telemetryDashboard("Turn(" + (int) heading + ")");
-            currentHeading = getHeading();
-            delta = normalizeHeading(desiredHeading - currentHeading);
+            telemetryDashboard("Turn(" + (int) imuHeading + ")");
+            currentPolarHeading = getPolarHeading();
+            delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
         }
 
         if(!opModeIsActive()) {
@@ -617,15 +635,19 @@ public class JediMasterAutonomous extends LinearOpMode {
         }
 
         powerTheWheels(0, 0, 0, 0);
-        hold(heading);
+        hold(imuHeading);
     }
 
-    private void hold(double heading) {
+    /**
+     *
+     * @param imuHeading Heading is in IMU coordinates (0* points to the tower goal).
+     */
+    private void hold(double imuHeading) {
         ElapsedTime Timer;
 
-        desiredHeading = heading;
-        double currentHeading = getHeading();
-        delta = normalizeHeading(desiredHeading - currentHeading);
+        desiredPolarHeading = getPolarHeading(imuHeading);
+        double currentPolarHeading = getPolarHeading();
+        delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
         Timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
         Timer.reset();
         while (opModeIsActive() && Math.abs(delta) > 0.5 && Timer.time() < holdTime) {
@@ -639,9 +661,9 @@ public class JediMasterAutonomous extends LinearOpMode {
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             sleep(75);
             powerTheWheels(0, 0, 0, 0);
-            telemetryDashboard("Hold(" + (int) heading + ")");
-            currentHeading = getHeading();
-            delta = normalizeHeading(desiredHeading - currentHeading);
+            telemetryDashboard("Hold(" + (int) imuHeading + ")");
+            currentPolarHeading = getPolarHeading();
+            delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
         }
 
         if(!opModeIsActive()) {
@@ -651,9 +673,13 @@ public class JediMasterAutonomous extends LinearOpMode {
         powerTheWheels(0, 0, 0, 0);
     }
 
+    /**
+     * TODO: Javadoc
+     * @param distance
+     */
     private void strafe(double distance) {
         debug("strafe is called");
-        desiredHeading = getHeading();
+        desiredPolarHeading = getPolarHeading();
         setMotorDistanceToTravel(distance, new int[]{-1, 1, 1, -1});
         leftFrontMotorPower = -robotSpeed;
         leftRearMotorPower = robotSpeed;
@@ -661,27 +687,10 @@ public class JediMasterAutonomous extends LinearOpMode {
         rightRearMotorPower = -robotSpeed;
         powerTheWheels(leftFrontMotorPower, leftRearMotorPower, rightFrontMotorPower, rightRearMotorPower);
         debug("Motors On");
-        while (!(isStopRequested() || !lfMotor.isBusy() || !lrMotor.isBusy() || !rfMotor.isBusy() || !rrMotor.isBusy())) {
-            delta = normalizeHeading(desiredHeading - getHeading());
-            if (Math.abs(delta) >= deltaThreshold) {
-                if (delta > 0) {
-                    if (distance > 0) {
-                        rightSpeed = robotSpeed + correctionSpeed;
-                        leftSpeed = robotSpeed - correctionSpeed;
-                    } else {
-                        rightSpeed = robotSpeed - correctionSpeed;
-                        leftSpeed = robotSpeed + correctionSpeed;
-                    }
-                } else {
-                    if (distance > 0) {
-                        rightSpeed = robotSpeed - correctionSpeed;
-                        leftSpeed = robotSpeed + correctionSpeed;
-                    } else {
-                        rightSpeed = robotSpeed + correctionSpeed;
-                        leftSpeed = robotSpeed - correctionSpeed;
-                    }
-                }
-            }
+        double priorDelta = 0.0;
+        while (!(isStopRequested() || !lfMotor.isBusy() || !lrMotor.isBusy() || !rfMotor.isBusy()
+                || !rrMotor.isBusy())) {
+            priorDelta = adjustSpeed(distance, desiredPolarHeading, priorDelta);
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             // Show motor power while strafing:
             telemetryDashboard("Strafe(" + distance + ")");
