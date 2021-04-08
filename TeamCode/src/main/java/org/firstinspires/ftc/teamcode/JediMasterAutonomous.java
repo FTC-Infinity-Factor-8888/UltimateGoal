@@ -106,6 +106,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 drive(-20);
                 turn(0);
                 drive(-3);
+                strafe(18);
                 hold(0);
             } else {
                 //1c
@@ -369,15 +370,17 @@ public class JediMasterAutonomous extends LinearOpMode {
                 // Put run blocks here.
                 intakeLift.setPosition(0.9);
                 sleep(1000);
-                //AllSix();
+                AllSix();
+
                 // IMU starts to pay attention to where it's going, in case Vuforia doesn't pick up the target.
                 Position position = new Position(DistanceUnit.INCH, startLineCoordinates.xPosition, startLineCoordinates.yPosition, 0, System.nanoTime());
                 imu.startAccelerationIntegration(position, null, 1);
-                navigationProbe(112);
+                navigationProbe(25);
                 if (lastKnownPositionAndHeading.valueSource == VUFORIA) {
                     telemetryDashboard("runOpMode");
-                    driveTo(targetZoneCoordinates);
-                    driveTo(tower);
+                    //where are we?
+                    hold(0);
+                    
                     dumpBed.setPosition(0);
                     PositionAndHeading line = new PositionAndHeading
                             (0, lastKnownPositionAndHeading.yPosition, 0, 0);
