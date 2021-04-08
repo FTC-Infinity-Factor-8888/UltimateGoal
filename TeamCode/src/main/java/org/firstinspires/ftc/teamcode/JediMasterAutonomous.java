@@ -79,6 +79,8 @@ public class JediMasterAutonomous extends LinearOpMode {
 
     // Maximum amount of ticks/second.
     private int maximumRobotTps = 2350;
+    private double minimumRobotSpeed = 0.2;
+    private double maximumRobotSpeed = 1.0;
     private double speedAdjust = 0.02;
 
     private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
@@ -155,7 +157,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     private void navigationProbe(final double maximumDistance){
         debug("navigationProbe is called");
         // Drive should be straight along the heading
-        desiredPolarHeading = getImuHeading();
+        desiredPolarHeading = getPolarHeading();
         debug("Heading " + desiredPolarHeading);
 
         // Makes sure we're in Encoder Mode
@@ -183,7 +185,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 proximitySensor.getDistance(DistanceUnit.INCH) < 6)) {
 
             debug("Loop started");
-            priorDelta = adjustSpeed(112, desiredPolarHeading, priorDelta);
+            priorDelta = adjustSpeed(maximumDistance, desiredPolarHeading, priorDelta);
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             // Show motor power while driving:
             telemetryDashboard("Navigation Probe");
@@ -214,14 +216,14 @@ public class JediMasterAutonomous extends LinearOpMode {
         if (Math.abs(delta) >= deltaThreshold) {
             if (Math.abs(delta) - priorDelta > 0) {
                 robotSpeed -= speedAdjust;
-                if (robotSpeed < 0) {
-                    robotSpeed = 0;
+                if (robotSpeed < minimumRobotSpeed) {
+                    robotSpeed = minimumRobotSpeed;
                 }
             }
             else if (Math.abs(delta) - priorDelta < 0) {
                 robotSpeed += speedAdjust;
-                if (robotSpeed > 1.0) {
-                    robotSpeed = 1.0;
+                if (robotSpeed > maximumRobotSpeed) {
+                    robotSpeed = maximumRobotSpeed;
                 }
             }
 
@@ -255,7 +257,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         double yDist = target.yPosition - lastKnownPositionAndHeading.yPosition;
 
         double targetDist = Math.sqrt(xDist * xDist + yDist * yDist);
-        double targetHeading = 0;
+        double targetImuHeading = 0;
 
         // Based on heading [insert trigonometry here].
         if (xDist == 0 && yDist == 0) {
@@ -263,27 +265,27 @@ public class JediMasterAutonomous extends LinearOpMode {
             return;
         }
         else if (xDist > 0 && yDist >= 0) {
-            targetHeading = Math.toDegrees(Math.atan(yDist / xDist));
+            targetImuHeading = Math.toDegrees(Math.atan(yDist / xDist));
         }
         else if (xDist == 0 && yDist > 0) {
-            targetHeading = 90;
+            targetImuHeading = 90;
         }
         else if (xDist < 0) {
             // it doesn't matter if y is less than, greater than, or equal to zero, the math is the same!
-            targetHeading = Math.toDegrees(Math.atan(yDist / xDist)) + 180;
+            targetImuHeading = Math.toDegrees(Math.atan(yDist / xDist)) + 180;
         }
         else if (xDist == 0 && yDist < 0) {
-            targetHeading = 270;
+            targetImuHeading = 270;
         }
         else if (xDist > 0 && yDist < 0) {
-            targetHeading = Math.toDegrees(Math.atan(yDist / xDist)) + 360;
+            targetImuHeading = Math.toDegrees(Math.atan(yDist / xDist)) + 360;
         }
 
         // How far does the robot need to turn.
-        targetHeading = normalizeHeading(targetHeading - getImuHeading());
+        targetImuHeading = normalizeHeading(targetImuHeading - getImuHeading());
 
         // turn "A" degrees
-        turn(targetHeading);
+        turn(targetImuHeading);
         telemetryDashboard("Drive To");
 
         drive(targetDist);
@@ -339,7 +341,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         robotSpeed = 0.5;
         turnSpeed = 0.4;
         holdSpeed = 0.1;
-        holdTime = 2000;
+        holdTime = 1500;
         initializeMotors();
         initializeIMU();
         ringDetector = new ObjectDetector();
@@ -369,7 +371,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 countTheRings();
                 // Put run blocks here.
                 intakeLift.setPosition(0.9);
-                sleep(1000);
+                //sleep(1000);
                 AllSix();
 
                 // IMU starts to pay attention to where it's going, in case Vuforia doesn't pick up the target.
@@ -393,6 +395,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                     telemetryDashboard("Parked on line");
                 }
                 intakeLift.setPosition(0.0);
+                dumpBed.setPosition(1);
             }
             catch (EmergencyStopException e) {
                 // FORCE QUIT THE PROGRAM RIGHT NOW!!!
@@ -558,7 +561,9 @@ public class JediMasterAutonomous extends LinearOpMode {
             //IMU takes over
             Position position = imu.getPosition().toUnit(DistanceUnit.INCH);
             double heading = getImuHeading();
-            lastKnownPositionAndHeading = new PositionAndHeading(position.x, position.y, heading, IMU);
+            // Don't update X & Y; the IMU is too inaccurate
+            lastKnownPositionAndHeading.heading = heading;
+            lastKnownPositionAndHeading.valueSource = IMU;
             telemetry.addData("IMU Position, Heading", "(%.1f, %.1f), %.0f", position.x, position.y,
                     heading);
         }
