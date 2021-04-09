@@ -28,8 +28,8 @@ import static org.firstinspires.ftc.teamcode.PositionAndHeading.VUFORIA;
 public class JediMasterAutonomous extends LinearOpMode {
 
 
-    private final PositionAndHeading START_LINE_1 = new PositionAndHeading(-69.5, 47.75, 0,0);
-    private final PositionAndHeading START_LINE_2 = new PositionAndHeading(-69.5, 21.5, 0,0);
+    private final PositionAndHeading START_LINE_1 = new PositionAndHeading(-51.5, 47.75, 0,0);
+    private final PositionAndHeading START_LINE_2 = new PositionAndHeading(-51.5, 21.5, 0,0);
     private final PositionAndHeading TARGET_ZONE_A = new PositionAndHeading(13, 58, 0,0);
     private final PositionAndHeading TARGET_ZONE_B = new PositionAndHeading(34, 35, 0,0);
     private final PositionAndHeading TARGET_ZONE_C = new PositionAndHeading(58, 58, 0,0);
@@ -79,9 +79,9 @@ public class JediMasterAutonomous extends LinearOpMode {
 
     // Maximum amount of ticks/second.
     private int maximumRobotTps = 2350;
-    private double minimumRobotSpeed = 0.2;
+    private double minimumRobotSpeed = 0.25;
     private double maximumRobotSpeed = 1.0;
-    private double speedAdjust = 0.02;
+    private double speedAdjust = 0.04;
 
     private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
     private PositionAndHeading tower = new PositionAndHeading(69,36,0,0);
@@ -339,9 +339,9 @@ public class JediMasterAutonomous extends LinearOpMode {
         deltaThreshold = 1;
         correctionSpeed = 0.1;
         robotSpeed = 0.5;
-        turnSpeed = 0.4;
+        turnSpeed = maximumRobotSpeed - minimumRobotSpeed;
         holdSpeed = 0.1;
-        holdTime = 1500;
+        holdTime = 1000;
         initializeMotors();
         initializeIMU();
         ringDetector = new ObjectDetector();
@@ -371,7 +371,6 @@ public class JediMasterAutonomous extends LinearOpMode {
                 countTheRings();
                 // Put run blocks here.
                 intakeLift.setPosition(0.9);
-                //sleep(1000);
                 AllSix();
 
                 // IMU starts to pay attention to where it's going, in case Vuforia doesn't pick up the target.
@@ -391,7 +390,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                     dumpBed.setPosition(0);
                     sleep(1000);
                     telemetryDashboard("Dumped rings");
-                    drive(-19 - lastKnownPositionAndHeading.xPosition);
+                    drive(19 - lastKnownPositionAndHeading.xPosition);
                     telemetryDashboard("Parked on line");
                 }
                 intakeLift.setPosition(0.0);
@@ -623,6 +622,12 @@ public class JediMasterAutonomous extends LinearOpMode {
         while (opModeIsActive() && Math.abs(delta) > deltaThreshold) {
             double deltaPercentage =  delta / 180;
             double currentTurnSpeed = turnSpeed * deltaPercentage;
+            if (delta > 0) {
+                currentTurnSpeed += minimumRobotSpeed;
+            }
+            else {
+                currentTurnSpeed -= minimumRobotSpeed;
+            }
             leftSpeed = -currentTurnSpeed;
             rightSpeed = currentTurnSpeed;
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
@@ -682,23 +687,23 @@ public class JediMasterAutonomous extends LinearOpMode {
         debug("strafe is called");
         desiredPolarHeading = getPolarHeading();
         setMotorDistanceToTravel(distance, new int[]{-1, 1, 1, -1});
-        leftFrontMotorPower = -robotSpeed;
-        leftRearMotorPower = robotSpeed;
-        rightFrontMotorPower = robotSpeed;
-        rightRearMotorPower = -robotSpeed;
-        powerTheWheels(leftFrontMotorPower, leftRearMotorPower, rightFrontMotorPower, rightRearMotorPower);
+        leftSpeed = robotSpeed;
+        rightSpeed = robotSpeed;
+        powerTheWheels(rightSpeed, leftSpeed, leftSpeed, rightSpeed);
+        telemetryDashboard("Strafe(" + distance + ")");
+
         debug("Motors On");
         double priorDelta = 0.0;
-        while (!(isStopRequested() || !lfMotor.isBusy() || !lrMotor.isBusy() || !rfMotor.isBusy()
-                || !rrMotor.isBusy())) {
+        while (opModeIsActive() && lfMotor.isBusy() && lrMotor.isBusy() && rfMotor.isBusy() &&
+                rrMotor.isBusy()) {
             priorDelta = adjustSpeed(distance, desiredPolarHeading, priorDelta);
-            powerTheWheels(-leftSpeed, rightSpeed, rightSpeed, -leftSpeed);
+            powerTheWheels(rightSpeed, leftSpeed, leftSpeed, rightSpeed);
             // Show motor power while strafing:
             telemetryDashboard("Strafe(" + distance + ")");
         }
 
         if(!opModeIsActive()) {
-            throw new EmergencyStopException("Hold");
+            throw new EmergencyStopException("Strafe");
         }
 
         debug("End of loop");
