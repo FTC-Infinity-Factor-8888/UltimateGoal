@@ -76,51 +76,49 @@ public class JediMasterAutonomous extends LinearOpMode {
     double correctionSpeed;
     double holdSpeed;
     double holdTime;
+    static double MIN_ROBOT_POWER = 0.2;
+    static double MAX_ROBOT_POWER = 0.8;
+    static double POWER_RANGE = MAX_ROBOT_POWER - MIN_ROBOT_POWER;
 
     // Maximum amount of ticks/second.
     private int maximumRobotTps = 2350;
     private double minimumRobotSpeed = 0.25;
     private double maximumRobotSpeed = 1.0;
-    private double speedAdjust = 0.04;
+    private double speedAdjust = 0.08;
 
     private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
     private PositionAndHeading tower = new PositionAndHeading(69,36,0,0);
 
-    private void AllSix() {
+    private void allSix() {
         //Looks like we are using this after all
         if (startLine == 1) {
             if (targetZone == 1) {
                 //1a
-                drive(53);
-                turn(25);
-                drive(17);
-                drive(-17);
+                drive(51);
+                turn(45);
+                drive(14);
+                drive(-14);
                 turn(0);
                 strafe(18);
-                hold(0);
-                drive(21);
-                hold(0);
+                turn(0);
             } else if (targetZone == 2) {
                 //1b
-                drive(80);
-                turn(-30);
-                drive(20);
-                drive(-20);
+                drive(72);
+                turn(-50);
+                drive(17.5);
+                drive(-17.5);
                 turn(0);
-                drive(-3);
                 strafe(18);
-                hold(0);
+                turn(0);
             } else {
                 //1c
-                drive(100);
-                turn(25);
-                drive(20);
-                drive(-20);
+                drive(98);
+                turn(45);
+                drive(14);
+                drive(-14);
                 turn(0);
                 strafe(18);
-                hold(0);
-                drive(-20);
-                hold(0);
+                turn(0);
             }
         } else {
             if (targetZone == 1) {
@@ -339,7 +337,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         deltaThreshold = 1;
         correctionSpeed = 0.1;
         robotSpeed = 0.5;
-        turnSpeed = maximumRobotSpeed - minimumRobotSpeed;
+        turnSpeed = POWER_RANGE;
         holdSpeed = 0.1;
         holdTime = 1000;
         initializeMotors();
@@ -357,7 +355,7 @@ public class JediMasterAutonomous extends LinearOpMode {
 
         //Make robot legal-size by raising intake
         intakeLift.setPosition(1.0);
-        telemetry.addData("Status", "Ready to start - v1.3.5");
+        telemetry.addData("Status", "Ready to start - v1.9.9");
         telemetry.addData("ProximitySensor", proximitySensor.getDistance(DistanceUnit.INCH));
         telemetry.update();
 
@@ -371,7 +369,7 @@ public class JediMasterAutonomous extends LinearOpMode {
                 countTheRings();
                 // Put run blocks here.
                 intakeLift.setPosition(0.9);
-                AllSix();
+                allSix();
 
                 // IMU starts to pay attention to where it's going, in case Vuforia doesn't pick up the target.
                 Position position = new Position(DistanceUnit.INCH, startLineCoordinates.xPosition, startLineCoordinates.yPosition, 0, System.nanoTime());
@@ -617,23 +615,36 @@ public class JediMasterAutonomous extends LinearOpMode {
     private void turn(double imuHeading) {
         desiredPolarHeading = getPolarHeading(imuHeading);
 
+        double priorDelta = 0;
         double currentPolarHeading = getPolarHeading();
         delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
         while (opModeIsActive() && Math.abs(delta) > deltaThreshold) {
-            double deltaPercentage =  delta / 180;
-            double currentTurnSpeed = turnSpeed * deltaPercentage;
-            if (delta > 0) {
-                currentTurnSpeed += minimumRobotSpeed;
+            if (delta - priorDelta > 0) {
+                turnSpeed -= speedAdjust;
+                if (turnSpeed < 0) {
+                    turnSpeed = 0;
+                }
             }
             else {
-                currentTurnSpeed -= minimumRobotSpeed;
+                turnSpeed += speedAdjust;
+                if (turnSpeed > POWER_RANGE) {
+                    turnSpeed = POWER_RANGE;
+                }
+            }
+
+            currentPolarHeading = getPolarHeading();
+            priorDelta = delta;
+            delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
+
+            double deltaPercentage =  powerPercentage(delta);
+            double currentTurnSpeed = turnSpeed * deltaPercentage + MIN_ROBOT_POWER;
+            if (delta < 0) {
+                currentTurnSpeed = -currentTurnSpeed;
             }
             leftSpeed = -currentTurnSpeed;
             rightSpeed = currentTurnSpeed;
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             telemetryDashboard("Turn(" + (int) imuHeading + ")");
-            currentPolarHeading = getPolarHeading();
-            delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
         }
 
         if(!opModeIsActive()) {
@@ -777,5 +788,15 @@ public class JediMasterAutonomous extends LinearOpMode {
             rfMotor.setPower(rfPower);
             rrMotor.setPower(rrPower);
         }
+    }
+
+    private double powerPercentage(double delta) {
+        double powerPercent = -0.00002 * Math.pow(Math.abs(delta) - 180, 2) + 1;
+        if (powerPercent > 1 || powerPercent < 0) {
+            System.out.println("*** WARNING! POWER PERCENT IS OUT OF RANGE: delta = " + delta + ", " +
+                    "powerPercent = " + powerPercent + " ***");
+        }
+
+        return powerPercent;
     }
 }
