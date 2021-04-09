@@ -21,12 +21,12 @@ public class JediMasterTeleOp extends LinearOpMode {
     private DcMotor lrMotor;
     private DcMotor rrMotor;
     private DcMotor intakeWheels;
-    private DcMotor shooter;
+    //private DcMotor shooter;
 
     private BNO055IMU imu;
     private Servo dumpBed;
     private Servo intakeLift;
-    private Servo sweeper;
+    //private Servo sweeper;
 
     double leftFrontMotorVelocity;
     double leftRearMotorVelocity;
@@ -70,12 +70,12 @@ public class JediMasterTeleOp extends LinearOpMode {
         lrMotor = hardwareMap.get(DcMotor.class, "LR Motor");
         rrMotor = hardwareMap.get(DcMotor.class, "RR Motor");
         intakeWheels = hardwareMap.get(DcMotor.class, "IntakeWheels");
-        shooter = hardwareMap.get(DcMotor.class, "RingShooter");
+        //shooter = hardwareMap.get(DcMotor.class, "RingShooter");
 
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         dumpBed = hardwareMap.get(Servo.class, "Servo1");
         intakeLift = hardwareMap.get(Servo.class, "IntakeLift");
-        sweeper = hardwareMap.get(Servo.class, "SweeperMotor");
+        //sweeper = hardwareMap.get(Servo.class, "SweeperMotor");
 
 
         // Initialize variables
@@ -101,8 +101,8 @@ public class JediMasterTeleOp extends LinearOpMode {
         double intakePosition = 0;
 
         if (opModeIsActive()) {
-            boolean sweeperMoving = false;
-            boolean sweeperButtonPushed = false;
+            //boolean sweeperMoving = false;
+            //boolean sweeperButtonPushed = false;
             while (opModeIsActive()) {
 
                 double forwardInput = gamepad1.left_stick_y;
