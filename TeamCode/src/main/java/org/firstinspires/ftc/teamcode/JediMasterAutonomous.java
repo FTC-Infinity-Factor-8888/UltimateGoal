@@ -372,8 +372,10 @@ public class JediMasterAutonomous extends LinearOpMode {
                 allSix();
 
                 // IMU starts to pay attention to where it's going, in case Vuforia doesn't pick up the target.
+                /*
                 Position position = new Position(DistanceUnit.INCH, startLineCoordinates.xPosition, startLineCoordinates.yPosition, 0, System.nanoTime());
                 imu.startAccelerationIntegration(position, null, 1);
+                */
                 navigationProbe(25);
                 if (lastKnownPositionAndHeading.valueSource == VUFORIA) {
                     telemetryDashboard("runOpMode");
@@ -547,9 +549,11 @@ public class JediMasterAutonomous extends LinearOpMode {
                 double vuforiaHeading = normalizeHeading(visibleTarget.rotation.thirdAngle);
 
                 lastKnownPositionAndHeading = new PositionAndHeading(xPosition, yPosition, vuforiaHeading, VUFORIA);
+                /*
                 Position position = new Position(DistanceUnit.INCH, xPosition, yPosition, 0, System.nanoTime());
                 //Tells the IMU to start paying attention because the IMU is the backup to Vuforia.
                 imu.startAccelerationIntegration(position, null, 1);
+                */
 
                 telemetry.addData("Visible Target", visibleTarget.targetName);
                 telemetry.addData("Vuforia Position, Heading", "(%.1f, %.1f), %.0f",
@@ -559,13 +563,19 @@ public class JediMasterAutonomous extends LinearOpMode {
             }
         } else {
             telemetry.addData("Visible Target", "none");
+            /*
             //IMU takes over
             Position position = imu.getPosition().toUnit(DistanceUnit.INCH);
+            */
             double heading = getImuHeading();
             // Don't update X & Y; the IMU is too inaccurate
             lastKnownPositionAndHeading.heading = heading;
             lastKnownPositionAndHeading.valueSource = IMU;
+            /*
             telemetry.addData("IMU Position, Heading", "(%.1f, %.1f), %.0f", position.x, position.y,
+                    heading);
+             */
+            telemetry.addData("IMU Heading", "%.0f", position.x, position.y,
                     heading);
         }
         telemetry.update();
