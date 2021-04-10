@@ -93,7 +93,7 @@ public class JediMasterTeleOp extends LinearOpMode {
         StrafeHeading = currentHeading;
         initializeMotors();
         initializeIMU();
-        telemetry.addData("Status", "Ready to start - v.6.0");
+        telemetry.addData("Status", "Ready to start - v.6.0.1");
         telemetry.update();
         waitForStart();
 

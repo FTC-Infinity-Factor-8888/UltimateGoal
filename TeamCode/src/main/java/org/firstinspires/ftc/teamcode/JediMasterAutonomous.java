@@ -567,16 +567,15 @@ public class JediMasterAutonomous extends LinearOpMode {
             //IMU takes over
             Position position = imu.getPosition().toUnit(DistanceUnit.INCH);
             */
-            double heading = getImuHeading();
+            double imuHeading = getImuHeading();
             // Don't update X & Y; the IMU is too inaccurate
-            lastKnownPositionAndHeading.heading = heading;
+            lastKnownPositionAndHeading.heading = imuHeading;
             lastKnownPositionAndHeading.valueSource = IMU;
             /*
             telemetry.addData("IMU Position, Heading", "(%.1f, %.1f), %.0f", position.x, position.y,
                     heading);
              */
-            telemetry.addData("IMU Heading", "%.0f", position.x, position.y,
-                    heading);
+            telemetry.addData("IMU Heading", "%.0f", imuHeading);
         }
         telemetry.update();
     }
@@ -785,18 +784,28 @@ public class JediMasterAutonomous extends LinearOpMode {
             double rfVelocity = rfPower * maximumRobotTps;
             double rrVelocity = rrPower * maximumRobotTps;
 
-            lfMotor.setVelocity(lfVelocity);
-            lrMotor.setVelocity(lrVelocity);
-            rfMotor.setVelocity(rfVelocity);
-            rrMotor.setVelocity(rrVelocity);
+            if (opModeIsActive()) {
+
+                lfMotor.setVelocity(lfVelocity);
+                lrMotor.setVelocity(lrVelocity);
+                rfMotor.setVelocity(rfVelocity);
+                rrMotor.setVelocity(rrVelocity);
+            }
+            else {
+                throw new EmergencyStopException("PowerTheWheels");
+            }
         }
         else {
             // We assume that we will be using RUN_TO_POSITION mode.
-
-            lfMotor.setPower(lfPower);
-            lrMotor.setPower(lrPower);
-            rfMotor.setPower(rfPower);
-            rrMotor.setPower(rrPower);
+            if(opModeIsActive()) {
+                lfMotor.setPower(lfPower);
+                lrMotor.setPower(lrPower);
+                rfMotor.setPower(rfPower);
+                rrMotor.setPower(rrPower);
+            }
+            else {
+                throw new EmergencyStopException("PowerTheWheels");
+            }
         }
     }
 
