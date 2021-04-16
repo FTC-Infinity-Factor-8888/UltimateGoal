@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -14,6 +15,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
+import java.util.List;
+
+import static org.firstinspires.ftc.teamcode.PositionAndHeading.IMU;
 import static org.firstinspires.ftc.teamcode.PositionAndHeading.VUFORIA;
 
 public class Robot {
@@ -23,6 +27,11 @@ public class Robot {
     private double minimumRobotSpeed = 0.25;
     private double maximumRobotSpeed = 1.0;
     private double speedAdjust = 0.08;
+    double ticksPerMotorRev = 530.3;
+    // Convert 75mm wheel to inches
+    double WheelCircumferanceinMM = 75*Math.PI;
+    double WheelCircumferenceInInches = WheelCircumferanceinMM/25.4;
+    double ticksPerInch = ticksPerMotorRev/ WheelCircumferenceInInches;
 
     private LinearOpMode creator;
     private Telemetry telemetry;
@@ -32,11 +41,14 @@ public class Robot {
     private DcMotorEx lrMotor;
     private DcMotorEx rrMotor;
     private BNO055IMU imu;
+    private Rev2mDistanceSensor proximitySensor;
 
     // Instance variables so we can display them on the dashboard
     double desiredPolarHeading;
     double delta;
     double deltaThreshold;
+
+    double robotSpeed = 0.5;
 
     //CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT
     private float cameraForwardDisplacement;
@@ -53,6 +65,10 @@ public class Robot {
     public Robot(LinearOpMode creator) {
       this.creator = creator;
       this.telemetry = creator.telemetry;
+    }
+
+    public void init() {
+        proximitySensor = hardwareMap.get(Rev2mDistanceSensor.class, "ProximitySensor");
     }
 
     /**
@@ -111,8 +127,8 @@ public class Robot {
         int RfMotorMaximumTicks = (int) (rfMotor.getCurrentPosition() + maximumDistanceInTicks);
         int RrMotorMaximumTicks = (int) (rrMotor.getCurrentPosition() + maximumDistanceInTicks);
 
-        leftSpeed = robotSpeed;
-        rightSpeed = robotSpeed;
+        double leftSpeed = robotSpeed;
+        double rightSpeed = robotSpeed;
         powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
         debug("Motors On");
 
@@ -139,9 +155,66 @@ public class Robot {
         debug("End of loop");
         powerTheWheels(0, 0, 0, 0);
 
-        if(!opModeIsActive()) {
+        if(!creator.opModeIsActive()) {
             throw new EmergencyStopException("Navigation Probe");
         }
+    }
+
+    private void telemetryDashboard(String method) {
+        telemetry.addData(method, "SL: %.0f, TZ: %.0f, Prox: %.1f", startLine, targetZone,
+                proximitySensor.getDistance(DistanceUnit.INCH));
+
+        telemetry.addData("Heading", "Desired: %.0f, Current: %.0f, Delta: %.0f",
+                getImuHeading(desiredPolarHeading), getImuHeading(), delta);
+
+        telemetry.addData("Target", "LF: %d, LR: %d, RF: %d, RR: %d",
+                lfMotor.getTargetPosition(), lrMotor.getTargetPosition(), rfMotor.getTargetPosition(), rrMotor.getTargetPosition());
+        telemetry.addData("Position", "LF: %d, LR: %d, RF: %d, RR: %d",
+                lfMotor.getCurrentPosition(), lrMotor.getCurrentPosition(), rfMotor.getCurrentPosition(), rrMotor.getCurrentPosition());
+        telemetry.addData("Power", "LF: %.1f, LR: %.1f, RF: %.1f, RR: %.1f",
+                lfMotor.getPower(), lrMotor.getPower(), rfMotor.getPower(), rrMotor.getPower());
+
+        List<NavigationInfo> allVisibleTargets = ringDetector.getNavigationInfo();
+        if (allVisibleTargets != null) {
+            for (NavigationInfo visibleTarget : allVisibleTargets) {
+
+                float xPosition = visibleTarget.translation.get(0);
+                float yPosition = visibleTarget.translation.get(1);
+                float zPosition = visibleTarget.translation.get(2);
+                float vuforiaRoll = visibleTarget.rotation.firstAngle;
+                float vuforiaPitch = visibleTarget.rotation.secondAngle;
+                double vuforiaHeading = normalizeHeading(visibleTarget.rotation.thirdAngle);
+
+                lastKnownPositionAndHeading = new PositionAndHeading(xPosition, yPosition, vuforiaHeading, VUFORIA);
+                /*
+                Position position = new Position(DistanceUnit.INCH, xPosition, yPosition, 0, System.nanoTime());
+                //Tells the IMU to start paying attention because the IMU is the backup to Vuforia.
+                imu.startAccelerationIntegration(position, null, 1);
+                */
+
+                telemetry.addData("Visible Target", visibleTarget.targetName);
+                telemetry.addData("Vuforia Position, Heading", "(%.1f, %.1f), %.0f",
+                        xPosition, yPosition, vuforiaHeading);
+                //telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f",
+                //        vuforiaRoll, vuforiaPitch, vuforiaHeading);
+            }
+        } else {
+            telemetry.addData("Visible Target", "none");
+            /*
+            //IMU takes over
+            Position position = imu.getPosition().toUnit(DistanceUnit.INCH);
+            */
+            double imuHeading = getImuHeading();
+            // Don't update X & Y; the IMU is too inaccurate
+            lastKnownPositionAndHeading.heading = imuHeading;
+            lastKnownPositionAndHeading.valueSource = IMU;
+            /*
+            telemetry.addData("IMU Position, Heading", "(%.1f, %.1f), %.0f", position.x, position.y,
+                    heading);
+             */
+            telemetry.addData("IMU Heading", "%.0f", imuHeading);
+        }
+        telemetry.update();
     }
 
     public HardwareMap getHardwareMap() {
@@ -235,6 +308,11 @@ public class Robot {
         }
     }
 
+    /**
+     * Return the robot's current heading, as an angle in degrees,
+     * with 90 as the heading at the time of IMU initialization.
+     * Angles are positive in a counter-clockwise direction.
+     */
     private double getImuHeading() {
         Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX,
                 AngleUnit.DEGREES);
@@ -242,10 +320,20 @@ public class Robot {
         return angles.firstAngle;
     }
 
+    //ToDo: JavaDoc
+    private double getImuHeading(double polarHeading) {
+        return polarHeading - 90;
+    }
+
+    //ToDo: JavaDoc
     private double getPolarHeading() {
         return getImuHeading() + 90;
     }
 
+    //ToDo: JavaDoc
+    private double getPolarHeading(double imuHeading) {
+        return imuHeading + 90;
+    }
 
     private void debug(String text) {
         System.out.println("Debug " + text);

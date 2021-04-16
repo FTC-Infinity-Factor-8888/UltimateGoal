@@ -38,7 +38,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     private Servo dumpBed;
 
 
-    private Rev2mDistanceSensor proximitySensor;
+
 
     private Robot robot;
     private ObjectDetector ringDetector;
@@ -60,7 +60,7 @@ public class JediMasterAutonomous extends LinearOpMode {
     int leftRearTargetPosition;
     int rightFrontTargetPosition;
     int rightRearTargetPosition;
-    double ticksPerInch;
+
 
     double robotSpeed;
     double leftSpeed;
@@ -260,20 +260,14 @@ public class JediMasterAutonomous extends LinearOpMode {
         robot.setHardwareMap(hardwareMap);
         robot.setCameraAdjustX(11.0f);
         robot.setCameraAdjustY(-4.5f);
-        double ticksPerMotorRev;
-        double WheelCircumferenceInInches;
+
 
         intakeLift = hardwareMap.get(Servo.class, "IntakeLift");
         dumpBed = hardwareMap.get(Servo.class, "Servo1");
 
 
-        proximitySensor = hardwareMap.get(Rev2mDistanceSensor.class, "ProximitySensor");
 
-        // Initialize variables
-        ticksPerMotorRev = 530.3;
-        // Convert 75mm wheel to inches
-        WheelCircumferenceInInches = 9.6125;
-        ticksPerInch = ticksPerMotorRev / WheelCircumferenceInInches;
+
         deltaThreshold = 1;
         correctionSpeed = 0.1;
         robotSpeed = 0.5;
@@ -405,80 +399,12 @@ public class JediMasterAutonomous extends LinearOpMode {
 
 
 
-    /**
-     * Return the robot's current heading, as an angle in degrees,
-     * with 90 as the heading at the time of IMU initialization.
-     * Angles are positive in a counter-clockwise direction.
-     */
 
 
 
-    private double getImuHeading(double polarHeading) {
-        return polarHeading - 90;
-    }
 
 
-    private double getPolarHeading(double imuHeading) {
-        return imuHeading + 90;
-    }
 
-
-    private void telemetryDashboard(String method) {
-        telemetry.addData(method, "SL: %.0f, TZ: %.0f, Prox: %.1f", startLine, targetZone,
-                proximitySensor.getDistance(DistanceUnit.INCH));
-
-        telemetry.addData("Heading", "Desired: %.0f, Current: %.0f, Delta: %.0f",
-                getImuHeading(desiredPolarHeading), getImuHeading(), delta);
-
-        telemetry.addData("Target", "LF: %d, LR: %d, RF: %d, RR: %d",
-                lfMotor.getTargetPosition(), lrMotor.getTargetPosition(), rfMotor.getTargetPosition(), rrMotor.getTargetPosition());
-        telemetry.addData("Position", "LF: %d, LR: %d, RF: %d, RR: %d",
-                lfMotor.getCurrentPosition(), lrMotor.getCurrentPosition(), rfMotor.getCurrentPosition(), rrMotor.getCurrentPosition());
-        telemetry.addData("Power", "LF: %.1f, LR: %.1f, RF: %.1f, RR: %.1f",
-                lfMotor.getPower(), lrMotor.getPower(), rfMotor.getPower(), rrMotor.getPower());
-
-        List<NavigationInfo> allVisibleTargets = ringDetector.getNavigationInfo();
-        if (allVisibleTargets != null) {
-            for (NavigationInfo visibleTarget : allVisibleTargets) {
-
-                float xPosition = visibleTarget.translation.get(0);
-                float yPosition = visibleTarget.translation.get(1);
-                float zPosition = visibleTarget.translation.get(2);
-                float vuforiaRoll = visibleTarget.rotation.firstAngle;
-                float vuforiaPitch = visibleTarget.rotation.secondAngle;
-                double vuforiaHeading = normalizeHeading(visibleTarget.rotation.thirdAngle);
-
-                lastKnownPositionAndHeading = new PositionAndHeading(xPosition, yPosition, vuforiaHeading, VUFORIA);
-                /*
-                Position position = new Position(DistanceUnit.INCH, xPosition, yPosition, 0, System.nanoTime());
-                //Tells the IMU to start paying attention because the IMU is the backup to Vuforia.
-                imu.startAccelerationIntegration(position, null, 1);
-                */
-
-                telemetry.addData("Visible Target", visibleTarget.targetName);
-                telemetry.addData("Vuforia Position, Heading", "(%.1f, %.1f), %.0f",
-                        xPosition, yPosition, vuforiaHeading);
-                //telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f",
-                //        vuforiaRoll, vuforiaPitch, vuforiaHeading);
-            }
-        } else {
-            telemetry.addData("Visible Target", "none");
-            /*
-            //IMU takes over
-            Position position = imu.getPosition().toUnit(DistanceUnit.INCH);
-            */
-            double imuHeading = getImuHeading();
-            // Don't update X & Y; the IMU is too inaccurate
-            lastKnownPositionAndHeading.heading = imuHeading;
-            lastKnownPositionAndHeading.valueSource = IMU;
-            /*
-            telemetry.addData("IMU Position, Heading", "(%.1f, %.1f), %.0f", position.x, position.y,
-                    heading);
-             */
-            telemetry.addData("IMU Heading", "%.0f", imuHeading);
-        }
-        telemetry.update();
-    }
 
     /**
      * Drive in a straight line.
