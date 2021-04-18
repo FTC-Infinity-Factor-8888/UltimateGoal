@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.test;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
@@ -14,6 +14,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.teamcode.EmergencyStopException;
+import org.firstinspires.ftc.teamcode.NavigationInfo;
+import org.firstinspires.ftc.teamcode.ObjectDetector;
+import org.firstinspires.ftc.teamcode.PositionAndHeading;
+import org.firstinspires.ftc.teamcode.UltimateGoalRobot;
 
 import java.util.List;
 
@@ -32,8 +37,9 @@ public class Robot {
     double WheelCircumferanceinMM = 75*Math.PI;
     double WheelCircumferenceInInches = WheelCircumferanceinMM/25.4;
     double ticksPerInch = ticksPerMotorRev/ WheelCircumferenceInInches;
+    private ObjectDetector ringDetector;
 
-    private LinearOpMode creator;
+    private UltimateGoalRobot creator;
     private Telemetry telemetry;
     private HardwareMap hardwareMap;
     private DcMotorEx lfMotor;
@@ -50,6 +56,8 @@ public class Robot {
 
     double robotSpeed = 0.5;
 
+    double targetZone = 1; //if countTheRings doesn't see anything, the value is target zone 1
+
     //CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT
     private float cameraForwardDisplacement;
     private float cameraLeftDisplacement;
@@ -61,14 +69,17 @@ public class Robot {
     private float cameraAdjustX;
     private float cameraAdjustY;
 
-    public Robot() {}
-    public Robot(LinearOpMode creator) {
+    // A robot without a creator makes no sense
+    private Robot() {}
+
+    public Robot(UltimateGoalRobot creator) {
       this.creator = creator;
       this.telemetry = creator.telemetry;
     }
 
     public void init() {
         proximitySensor = hardwareMap.get(Rev2mDistanceSensor.class, "ProximitySensor");
+        ringDetector = new ObjectDetector();
     }
 
     /**
@@ -161,7 +172,7 @@ public class Robot {
     }
 
     private void telemetryDashboard(String method) {
-        telemetry.addData(method, "SL: %.0f, TZ: %.0f, Prox: %.1f", startLine, targetZone,
+        telemetry.addData(method, "SL: %.0f, TZ: %.0f, Prox: %.1f", creator.getStartLine(), targetZone,
                 proximitySensor.getDistance(DistanceUnit.INCH));
 
         telemetry.addData("Heading", "Desired: %.0f, Current: %.0f, Delta: %.0f",

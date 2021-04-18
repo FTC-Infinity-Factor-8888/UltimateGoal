@@ -1,31 +1,23 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.test;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.teamcode.EmergencyStopException;
+import org.firstinspires.ftc.teamcode.PositionAndHeading;
+import org.firstinspires.ftc.teamcode.UltimateGoalRobot;
 
 import java.util.List;
 
 import static org.firstinspires.ftc.teamcode.PositionAndHeading.FIXED;
-import static org.firstinspires.ftc.teamcode.PositionAndHeading.IMU;
 import static org.firstinspires.ftc.teamcode.PositionAndHeading.VUFORIA;
 
 @Autonomous(name = "JediMasterAutonomous (Blocks to Java)")
-public class JediMasterAutonomous extends LinearOpMode {
+public class JediMasterAutonomous extends UltimateGoalRobot {
 
 
     private final PositionAndHeading START_LINE_1 = new PositionAndHeading(-51.5, 47.75, 0,0);
@@ -41,10 +33,9 @@ public class JediMasterAutonomous extends LinearOpMode {
 
 
     private Robot robot;
-    private ObjectDetector ringDetector;
+
 
     double startLine = 1; //default to the first start line
-    double targetZone = 1; //if countTheRings doesn't see anything, the value is target zone 1
     PositionAndHeading startLineCoordinates = START_LINE_1;
     PositionAndHeading targetZoneCoordinates = TARGET_ZONE_A;
 
@@ -78,6 +69,10 @@ public class JediMasterAutonomous extends LinearOpMode {
 
     private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
     private PositionAndHeading tower = new PositionAndHeading(69,36,0,0);
+
+    public int getStartLine() {
+        return (int) startLine;
+    }
 
     private void allSix() {
         //Looks like we are using this after all
@@ -276,7 +271,7 @@ public class JediMasterAutonomous extends LinearOpMode {
         holdTime = 1000;
         robot.initializeMotors();
         robot.initializeIMU();
-        ringDetector = new ObjectDetector();
+
         try {
             System.out.println("Starting camera initialization");
             ringDetector.init(robot);
@@ -355,7 +350,6 @@ public class JediMasterAutonomous extends LinearOpMode {
             for (Recognition recognition : updatedRecognitions) {
                 i += 1;
                 String label = recognition.getLabel();
-                // TODO: Set the appropriate Target Zone
 
                 if (ringDetector.QUAD.equals(label)) {
                     targetZone = 3;
