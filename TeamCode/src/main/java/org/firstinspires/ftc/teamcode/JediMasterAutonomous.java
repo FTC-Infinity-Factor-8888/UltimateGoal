@@ -53,13 +53,7 @@ public class JediMasterAutonomous extends UltimateGoalRobot {
     int rightFrontTargetPosition;
     int rightRearTargetPosition;
 
-
-    double robotSpeed;
-    double leftSpeed;
-    double rightSpeed;
-
     double turnSpeed;
-    double correctionSpeed;
     double holdSpeed;
     double holdTime;
     static double MIN_ROBOT_POWER = 0.2;
@@ -68,123 +62,76 @@ public class JediMasterAutonomous extends UltimateGoalRobot {
 
 
 
-    private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
+
     private PositionAndHeading tower = new PositionAndHeading(69,36,0,0);
 
     public int getStartLine() {
         return (int) startLine;
     }
 
-    private void allSix() {
-        //Looks like we are using this after all
-        if (startLine == 1) {
-            if (targetZone == 1) {
-                //1a
-                drive(51);
-                turn(45);
-                drive(14);
-                drive(-14);
-                turn(0);
-                strafe(18);
-                turn(0);
-            } else if (targetZone == 2) {
-                //1b
-                drive(72);
-                turn(-50);
-                drive(17.5);
-                drive(-17.5);
-                turn(0);
-                strafe(18);
-                turn(0);
-            } else {
-                //1c
-                drive(98);
-                turn(45);
-                drive(14);
-                drive(-14);
-                turn(0);
-                strafe(18);
-                turn(0);
-            }
+    private void allThreeLine1() {
+        //we need to split allSix for each line
+        if (targetZone == 1) {
+            //1a, going to target zone number 1 (a)
+            drive(51);
+            turn(45);
+            drive(14);
+            drive(-14);
+            turn(0);
+            strafe(18);
+            turn(0);
+        } else if (targetZone == 2) {
+            //1b, going to target zone number 2 (b)
+            drive(72);
+            turn(-50);
+            drive(17.5);
+            drive(-17.5);
+            turn(0);
+            strafe(18);
+            turn(0);
         } else {
-            if (targetZone == 1) {
-                //2a
-                drive(53);
-                turn(60);
-                drive(36);
-                drive(-36);
-                turn(0);
-                drive(25);
-                hold(0);
-            } else if (targetZone == 2) {
-                //2b
-                drive(80);
-                turn(30);
-                drive(18);
-                drive(-18);
-                turn(0);
-                drive(-5);
-                hold(0);
-            } else {
-                //2c
-                drive(100);
-                turn(60);
-                drive(36);
-                drive(-36);
-                turn(0);
-                drive(-25);
-                hold(0);
-            }
+            //1c, going to target zone number 3 (c)
+            drive(98);
+            turn(45);
+            drive(14);
+            drive(-14);
+            turn(0);
+            strafe(18);
+            turn(0);
         }
     }
 
+    private void allThreeLine2(){
+        //we need to split allSix for each line
 
-
-    /**
-     * TODO: Add javadoc
-     * @param distance
-     * @param desiredPolarHeading is in Polar Corrdinates (0* is along the positive x axis).
-     * @param priorDelta
-     * @return
-     */
-    private double adjustSpeed(double distance, double desiredPolarHeading, double priorDelta) {
-        double currentPolarHeading = getPolarHeading();
-        delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
-        if (Math.abs(delta) >= deltaThreshold) {
-            if (Math.abs(delta) - priorDelta > 0) {
-                robotSpeed -= speedAdjust;
-                if (robotSpeed < minimumRobotSpeed) {
-                    robotSpeed = minimumRobotSpeed;
-                }
-            }
-            else if (Math.abs(delta) - priorDelta < 0) {
-                robotSpeed += speedAdjust;
-                if (robotSpeed > maximumRobotSpeed) {
-                    robotSpeed = maximumRobotSpeed;
-                }
-            }
-
-            if (delta > 0) {
-                    if (distance > 0) {
-                        rightSpeed = robotSpeed + correctionSpeed;
-                        leftSpeed = robotSpeed - correctionSpeed;
-                    }
-                    else {
-                        rightSpeed = robotSpeed - correctionSpeed;
-                        leftSpeed = robotSpeed + correctionSpeed;
-                    }
-                }
-                else {
-                if (distance > 0) {
-                    rightSpeed = robotSpeed - correctionSpeed;
-                    leftSpeed = robotSpeed + correctionSpeed;
-                } else {
-                    rightSpeed = robotSpeed + correctionSpeed;
-                    leftSpeed = robotSpeed - correctionSpeed;
-                }
-            }
+        if (targetZone == 1) {
+            //2a
+            drive(53);
+            turn(60);
+            drive(36);
+            drive(-36);
+            turn(0);
+            drive(25);
+            hold(0);
+        } else if (targetZone == 2) {
+            //2b
+            drive(80);
+            turn(30);
+            drive(18);
+            drive(-18);
+            turn(0);
+            drive(-5);
+            hold(0);
+        } else {
+            //2c
+            drive(100);
+            turn(60);
+            drive(36);
+            drive(-36);
+            turn(0);
+            drive(-25);
+            hold(0);
         }
-        return delta;
     }
 
     private void driveTo(PositionAndHeading target) {
@@ -235,18 +182,6 @@ public class JediMasterAutonomous extends UltimateGoalRobot {
 
     }
 
-    private double normalizeHeading(double heading) {
-        while (heading >= 180.0 || heading < -180.0) {
-            if (heading >= 180.0) {
-                heading -= 360.0;
-            }
-            else if (heading < -180.0) {
-                heading += 360.0;
-            }
-        }
-        return heading;
-    }
-
     /**
      * This function is executed when this Op Mode is selected from the Driver Station.
      */
@@ -265,7 +200,6 @@ public class JediMasterAutonomous extends UltimateGoalRobot {
 
 
         deltaThreshold = 1;
-        correctionSpeed = 0.1;
         robotSpeed = 0.5;
         turnSpeed = POWER_RANGE;
         holdSpeed = 0.1;

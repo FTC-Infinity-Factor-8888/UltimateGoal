@@ -31,13 +31,16 @@ public class Robot {
     private int maximumRobotTps = 2350;
     private double minimumRobotSpeed = 0.25;
     private double maximumRobotSpeed = 1.0;
+    private double robotSpeed = 0.5;
     private double speedAdjust = 0.08;
-    double ticksPerMotorRev = 530.3;
+    private double correctionSpeed = 0.1;
+    private double ticksPerMotorRev = 530.3;
     // Convert 75mm wheel to inches
     double WheelCircumferanceinMM = 75*Math.PI;
     double WheelCircumferenceInInches = WheelCircumferanceinMM/25.4;
     double ticksPerInch = ticksPerMotorRev/ WheelCircumferenceInInches;
-    private ObjectDetector ringDetector;
+    double leftSpeed;
+    double rightSpeed;
 
     private UltimateGoalRobot creator;
     private Telemetry telemetry;
@@ -48,15 +51,16 @@ public class Robot {
     private DcMotorEx rrMotor;
     private BNO055IMU imu;
     private Rev2mDistanceSensor proximitySensor;
+    private ObjectDetector ringDetector;
 
     // Instance variables so we can display them on the dashboard
     double desiredPolarHeading;
     double delta;
     double deltaThreshold;
 
-    double robotSpeed = 0.5;
-
     double targetZone = 1; //if countTheRings doesn't see anything, the value is target zone 1
+
+    private PositionAndHeading lastKnownPositionAndHeading = new PositionAndHeading();
 
     //CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT
     private float cameraForwardDisplacement;
@@ -138,8 +142,8 @@ public class Robot {
         int RfMotorMaximumTicks = (int) (rfMotor.getCurrentPosition() + maximumDistanceInTicks);
         int RrMotorMaximumTicks = (int) (rrMotor.getCurrentPosition() + maximumDistanceInTicks);
 
-        double leftSpeed = robotSpeed;
-        double rightSpeed = robotSpeed;
+        leftSpeed = robotSpeed;
+        rightSpeed = robotSpeed;
         powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
         debug("Motors On");
 
@@ -276,6 +280,54 @@ public class Robot {
         this.cameraAdjustY = cameraAdjustY;
     }
 
+    /**
+     * TODO: Add javadoc
+     * @param distance
+     * @param desiredPolarHeading is in Polar Coordinates (0* is along the positive x axis).
+     * @param priorDelta
+     * @return
+     */
+    private double adjustSpeed(double distance, double desiredPolarHeading, double priorDelta) {
+        double currentPolarHeading = getPolarHeading();
+        delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
+        if (Math.abs(delta) >= deltaThreshold) {
+            if (Math.abs(delta) - priorDelta > 0) {
+                robotSpeed -= speedAdjust;
+                if (robotSpeed < minimumRobotSpeed) {
+                    robotSpeed = minimumRobotSpeed;
+                }
+            }
+            else if (Math.abs(delta) - priorDelta < 0) {
+                robotSpeed += speedAdjust;
+                if (robotSpeed > maximumRobotSpeed) {
+                    robotSpeed = maximumRobotSpeed;
+                }
+            }
+
+            if (delta > 0) {
+                if (distance > 0) {
+                    rightSpeed = robotSpeed + correctionSpeed;
+                    leftSpeed = robotSpeed - correctionSpeed;
+                }
+                else {
+                    rightSpeed = robotSpeed - correctionSpeed;
+                    leftSpeed = robotSpeed + correctionSpeed;
+                }
+            }
+            else {
+                if (distance > 0) {
+                    rightSpeed = robotSpeed - correctionSpeed;
+                    leftSpeed = robotSpeed + correctionSpeed;
+                } else {
+                    rightSpeed = robotSpeed + correctionSpeed;
+                    leftSpeed = robotSpeed - correctionSpeed;
+                }
+            }
+        }
+        return delta;
+    }
+
+
     private void powerTheWheels(double lfPower, double lrPower, double rfPower, double rrPower) {
         double leftMax = Math.max(Math.abs(lfPower), Math.abs(lrPower));
         double rightMax = Math.max(Math.abs(rfPower), Math.abs(rrPower));
@@ -344,6 +396,18 @@ public class Robot {
     //ToDo: JavaDoc
     private double getPolarHeading(double imuHeading) {
         return imuHeading + 90;
+    }
+
+    private double normalizeHeading(double heading) {
+        while (heading >= 180.0 || heading < -180.0) {
+            if (heading >= 180.0) {
+                heading -= 360.0;
+            }
+            else if (heading < -180.0) {
+                heading += 360.0;
+            }
+        }
+        return heading;
     }
 
     private void debug(String text) {
