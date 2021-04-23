@@ -4,8 +4,9 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-@TeleOp
+@TeleOp (name="MaxVelocityTest")
 public class MaxVelocityTest extends LinearOpMode {
     DcMotorEx lfMotor;
     DcMotorEx rfMotor;
@@ -25,6 +26,8 @@ public class MaxVelocityTest extends LinearOpMode {
         rfMotor = hardwareMap.get(DcMotorEx.class, "RF Motor");
         lrMotor = hardwareMap.get(DcMotorEx.class, "LR Motor");
         rrMotor = hardwareMap.get(DcMotorEx.class, "RR Motor");
+        rfMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        rrMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         lfMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rfMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         lrMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -58,13 +61,40 @@ public class MaxVelocityTest extends LinearOpMode {
                     rrMaxVelocity = currentVelocity;
                 }
 
-                telemetry.addData("LF maximum velocity", lfMaxVelocity);
+                double P;
+                double I;
+                double D = 0;
+                double F;
 
-                telemetry.addData("Rf maximum velocity", rfMaxVelocity);
+                F = 32767 / lfMaxVelocity;
+                P = 0.1 * F;
+                I = 0.1 * P;
 
-                telemetry.addData("LR maximum velocity", lrMaxVelocity);
+                telemetry.addData("LF", "P (%.2f) I (%.3f) D (%.3f) F (%.1f)", P, I, D, F);
+                System.out.printf("LF - P (%.2f) I (%.3f) D (%.3f) F (%.1f)\n", P, I, D, F);
 
-                telemetry.addData("RR maximum velocity", rrMaxVelocity);
+                F = 32767 / rfMaxVelocity;
+                P = 0.1 * F;
+                I = 0.1 * P;
+
+                telemetry.addData("RF", "P (%.2f) I (%.3f) D (%.3f) F (%.1f)", P, I, D, F);
+                System.out.printf("RF - P (%.2f) I (%.3f) D (%.3f) F (%.1f)\n", P, I, D, F);
+
+
+                F = 32767 / lrMaxVelocity;
+                P = 0.1 * F;
+                I = 0.1 * P;
+
+                telemetry.addData("LR", "P (%.2f) I (%.3f) D (%.3f) F (%.1f)", P, I, D, F);
+                System.out.printf("LR - P (%.2f) I (%.3f) D (%.3f) F (%.1f)\n", P, I, D, F);
+
+                F = 32767 / rrMaxVelocity;
+                P = 0.1 * F;
+                I = 0.1 * P;
+
+                telemetry.addData("RR", "P (%.2f) I (%.3f) D (%.3f) F (%.1f)", P, I, D, F);
+                System.out.printf("RR - P (%.2f) I (%.3f) D (%.3f) F (%.1f)\n", P, I, D, F);
+
                 telemetry.update();
             }
         }
