@@ -71,14 +71,14 @@ public class MaxVelocityTest extends LinearOpMode {
                 I = 0.1 * P;
 
                 telemetry.addData("LF", "P (%.2f) I (%.3f) D (%.3f) F (%.1f)", P, I, D, F);
-                System.out.printf("LF - P (%.2f) I (%.3f) D (%.3f) F (%.1f)\n", P, I, D, F);
+                System.out.printf("LF - P (%.2f) I (%.3f) D (%.3f) F (%.1f) TPS (%.0f)\n", P, I, D, F, lfMaxVelocity);
 
                 F = 32767 / rfMaxVelocity;
                 P = 0.1 * F;
                 I = 0.1 * P;
 
                 telemetry.addData("RF", "P (%.2f) I (%.3f) D (%.3f) F (%.1f)", P, I, D, F);
-                System.out.printf("RF - P (%.2f) I (%.3f) D (%.3f) F (%.1f)\n", P, I, D, F);
+                System.out.printf("RF - P (%.2f) I (%.3f) D (%.3f) F (%.1f) TPS (%.0f)\n", P, I, D, F, rfMaxVelocity);
 
 
                 F = 32767 / lrMaxVelocity;
@@ -86,14 +86,14 @@ public class MaxVelocityTest extends LinearOpMode {
                 I = 0.1 * P;
 
                 telemetry.addData("LR", "P (%.2f) I (%.3f) D (%.3f) F (%.1f)", P, I, D, F);
-                System.out.printf("LR - P (%.2f) I (%.3f) D (%.3f) F (%.1f)\n", P, I, D, F);
+                System.out.printf("LR - P (%.2f) I (%.3f) D (%.3f) F (%.1f) TPS (%.0f)\n", P, I, D, F, lrMaxVelocity);
 
                 F = 32767 / rrMaxVelocity;
                 P = 0.1 * F;
                 I = 0.1 * P;
 
                 telemetry.addData("RR", "P (%.2f) I (%.3f) D (%.3f) F (%.1f)", P, I, D, F);
-                System.out.printf("RR - P (%.2f) I (%.3f) D (%.3f) F (%.1f)\n", P, I, D, F);
+                System.out.printf("RR - P (%.2f) I (%.3f) D (%.3f) F (%.1f) TPS (%.0f)\n", P, I, D, F, rrMaxVelocity);
 
                 telemetry.update();
             }
