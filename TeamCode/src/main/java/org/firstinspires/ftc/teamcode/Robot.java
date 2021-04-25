@@ -31,7 +31,8 @@ public class Robot {
 
 
     // Maximum amount of ticks/second.
-    private int maximumRobotTps = 2350;
+    //Based off of PIDF measurements:
+    private int maximumRobotTps = 2500;
     private double minimumRobotSpeed = 0.25;
     private double maximumRobotSpeed = 1.0;
     private double robotSpeed = 0.5;
