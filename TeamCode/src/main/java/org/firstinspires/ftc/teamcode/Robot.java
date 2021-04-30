@@ -24,29 +24,32 @@ import static org.firstinspires.ftc.teamcode.PositionAndHeading.IMU;
 import static org.firstinspires.ftc.teamcode.PositionAndHeading.VUFORIA;
 
 public class Robot {
-    private final static double MIN_ROBOT_POWER = 0.2;
-    private final static double MAX_ROBOT_POWER = 0.8;
-    private final static double POWER_RANGE = MAX_ROBOT_POWER - MIN_ROBOT_POWER;
+    private final static double MIN_ROBOT_SPEED = 0.3;
+    private final static double MAX_ROBOT_SPEED = 1.0;
+    private final static double SPEED_RANGE = MAX_ROBOT_SPEED - MIN_ROBOT_SPEED;
     private final static double HOLD_TIME = 1000;
-
 
     // Maximum amount of ticks/second.
     //Based off of PIDF measurements:
     private int maximumRobotTps = 2500;
-    private double minimumRobotSpeed = 0.25;
-    private double maximumRobotSpeed = 1.0;
-    private double robotSpeed = 0.5;
-    private double turnSpeed = POWER_RANGE;
+    private double robotSpeed = 0.75;
+    private double turnSpeed = SPEED_RANGE;
     private double holdSpeed = 0.1;
     private double speedAdjust = 0.08;
     private double correctionSpeed = 0.1;
     private double ticksPerMotorRev = 530.3;
+    private int lfMotorMaxTps = 2655;
+    private int rfMotorMaxTps = 2650;
+    private int lrMotorMaxTps = 2610;
+    private int rrMotorMaxTps = 2615;
+    private double positionPIDF = 2.5;
     // Convert 75mm wheel to inches
     double WheelCircumferanceinMM = 75*Math.PI;
     double WheelCircumferenceInInches = WheelCircumferanceinMM/25.4;
     double ticksPerInch = ticksPerMotorRev/ WheelCircumferenceInInches;
     double leftSpeed;
     double rightSpeed;
+
 
     private UltimateGoalRobot creator;
     private Telemetry telemetry;
@@ -328,14 +331,14 @@ public class Robot {
         while (creator.opModeIsActive() && Math.abs(delta) > deltaThreshold) {
             if (delta - priorDelta > 0) {
                 turnSpeed -= speedAdjust;
-                if (turnSpeed < 0) {
-                    turnSpeed = 0;
+                if (turnSpeed < MIN_ROBOT_SPEED) {
+                    turnSpeed = MIN_ROBOT_SPEED;
                 }
             }
             else {
                 turnSpeed += speedAdjust;
-                if (turnSpeed > POWER_RANGE) {
-                    turnSpeed = POWER_RANGE;
+                if (turnSpeed > SPEED_RANGE) {
+                    turnSpeed = SPEED_RANGE;
                 }
             }
 
@@ -344,7 +347,7 @@ public class Robot {
             delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
 
             double deltaPercentage =  powerPercentage(delta);
-            double currentTurnSpeed = turnSpeed * deltaPercentage + MIN_ROBOT_POWER;
+            double currentTurnSpeed = turnSpeed * deltaPercentage + MIN_ROBOT_SPEED;
             if (delta < 0) {
                 currentTurnSpeed = -currentTurnSpeed;
             }
@@ -505,6 +508,21 @@ public class Robot {
         lrMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rfMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rrMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        setPIDFValues(lfMotor, lfMotorMaxTps);
+        setPIDFValues(rfMotor, rfMotorMaxTps);
+        setPIDFValues(lrMotor, lrMotorMaxTps);
+        setPIDFValues(rrMotor, rrMotorMaxTps);
+    }
+
+    private void setPIDFValues(DcMotorEx motor, int tps) {
+            double D = 0;
+            double F = 32767 / tps;
+            double P = 0.1 * F;
+            double I = 0.1 * P;
+
+            motor.setVelocityPIDFCoefficients(P, I, D, F);
+            motor.setPositionPIDFCoefficients(positionPIDF);
     }
 
     private void initializeIMU() {
@@ -623,14 +641,14 @@ public class Robot {
         if (Math.abs(delta) >= deltaThreshold) {
             if (Math.abs(delta) - priorDelta > 0) {
                 robotSpeed -= speedAdjust;
-                if (robotSpeed < minimumRobotSpeed) {
-                    robotSpeed = minimumRobotSpeed;
+                if (robotSpeed < MIN_ROBOT_SPEED) {
+                    robotSpeed = MIN_ROBOT_SPEED;
                 }
             }
             else if (Math.abs(delta) - priorDelta < 0) {
                 robotSpeed += speedAdjust;
-                if (robotSpeed > maximumRobotSpeed) {
-                    robotSpeed = maximumRobotSpeed;
+                if (robotSpeed > MAX_ROBOT_SPEED) {
+                    robotSpeed = MAX_ROBOT_SPEED;
                 }
             }
 
@@ -674,7 +692,7 @@ public class Robot {
         double rightMax = Math.max(Math.abs(rfPower), Math.abs(rrPower));
         double max = Math.max (leftMax, rightMax);
 
-        if(max > 1.0) {
+        if(max > MAX_ROBOT_SPEED) {
             lfPower /= max;
             lrPower /= max;
             rfPower /= max;
