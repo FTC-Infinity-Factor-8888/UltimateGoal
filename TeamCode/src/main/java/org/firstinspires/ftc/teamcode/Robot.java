@@ -67,7 +67,7 @@ public class Robot {
     // Instance variables so we can display them on the dashboard
     double desiredPolarHeading;
     double delta;
-    double deltaThreshold;
+    double deltaThreshold = 1;
 
     int targetZone = 1; //if countTheRings doesn't see anything, the value is target zone 1
 
@@ -84,7 +84,7 @@ public class Robot {
     private float cameraAdjustX;
     private float cameraAdjustY;
 
-    // A robot without a creator makes no sense
+    // A robot without a creator makes no sense!
     private Robot() {}
 
     public Robot(UltimateGoalRobot creator) {
@@ -285,7 +285,7 @@ public class Robot {
      * Drive in a straight line.
      * @param distance How far to move, in inches.
      */
-    public void drive(double distance) {
+    public void driveOg(double distance) {
         debug("Drive is called to go " + distance + " inches.");
         // Drive should be straight along the heading
         desiredPolarHeading = getPolarHeading();
@@ -306,13 +306,45 @@ public class Robot {
             // Show motor power while driving:
             telemetryDashboard("Drive(" + distance + ")");
         }
-
         if (!creator.opModeIsActive()) {
             throw new EmergencyStopException("Drive");
         }
-
         // Stop the robot
         debug("End of loop");
+        // Reset motor mode
+        setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        powerTheWheels(0, 0, 0, 0);
+    }
+
+    public void drive(double distance) {
+        double desiredHeading = getImuHeading();
+        setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
+        double speed = robotSpeed;
+        if (distance < 0) {
+            speed *= -1;
+        }
+        leftSpeed = speed;
+        rightSpeed = speed;
+        powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
+        telemetryDashboard("Drive(" + distance + ")");
+        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy() && rrMotor.isBusy()) {
+            double imuHeading = getImuHeading();
+            delta = normalizeHeading(desiredHeading - imuHeading);
+            double adjustSpeed = 0;
+            if (Math.abs(delta) > deltaThreshold) {
+                adjustSpeed = correctionSpeed;
+                if (delta > 0) {
+                    adjustSpeed *= -1;
+                }
+            }
+            leftSpeed = speed + adjustSpeed;
+            rightSpeed = speed - adjustSpeed;
+            powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
+            telemetryDashboard("Drive(" + distance + ")");
+        }
+        if (!creator.opModeIsActive()) {
+            throw new EmergencyStopException("Drive");
+        }
         // Reset motor mode
         setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
         powerTheWheels(0, 0, 0, 0);
@@ -322,7 +354,7 @@ public class Robot {
      * Turn turns the robot till it is facing imuHeading.
      * @param imuHeading Heading is in IMU coordinates (0* points to the tower goal).
      */
-    public void turn(double imuHeading) {
+    public void turnOg(double imuHeading) {
         desiredPolarHeading = getPolarHeading(imuHeading);
 
         double priorDelta = 0;
@@ -365,19 +397,43 @@ public class Robot {
         hold(imuHeading);
     }
 
+    public void turn(double desiredHeading) {
+        double currentHeading = getImuHeading();
+        delta = normalizeHeading(desiredHeading - currentHeading);
+        while (creator.opModeIsActive() && Math.abs(delta) > deltaThreshold) {
+            currentHeading = getImuHeading();
+            delta = normalizeHeading(desiredHeading - currentHeading);
+            double deltaPercentage =  powerPercentage(delta);
+            double currentTurnSpeed = turnSpeed * deltaPercentage + MIN_ROBOT_SPEED;
+            if (delta < 0) {
+                currentTurnSpeed = -currentTurnSpeed;
+            }
+            leftSpeed = -currentTurnSpeed;
+            rightSpeed = currentTurnSpeed;
+            powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
+            telemetryDashboard("Turn(" + (int) desiredHeading + ")");
+        }
+        if(!creator.opModeIsActive()) {
+            throw new EmergencyStopException("Turn");
+        }
+
+        powerTheWheels(0, 0, 0, 0);
+        hold(desiredHeading);
+    }
+
     /**
      *
      * @param imuHeading Heading is in IMU coordinates (0* points to the tower goal).
      */
-    public void hold(double imuHeading) {
-        ElapsedTime Timer;
+    public void holdOg(double imuHeading) {
+        ElapsedTime timer;
 
         desiredPolarHeading = getPolarHeading(imuHeading);
         double currentPolarHeading = getPolarHeading();
         delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
-        Timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
-        Timer.reset();
-        while (creator.opModeIsActive() && Math.abs(delta) > 0.5 && Timer.time() < HOLD_TIME) {
+        timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+        timer.reset();
+        while (creator.opModeIsActive() && Math.abs(delta) > 0.5 && timer.time() < HOLD_TIME) {
             if (delta > 0) {
                 leftSpeed = -holdSpeed;
                 rightSpeed = holdSpeed;
@@ -391,6 +447,36 @@ public class Robot {
             telemetryDashboard("Hold(" + (int) imuHeading + ")");
             currentPolarHeading = getPolarHeading();
             delta = normalizeHeading(desiredPolarHeading - currentPolarHeading);
+        }
+
+        if(!creator.opModeIsActive()) {
+            throw new EmergencyStopException("Hold");
+        }
+
+        powerTheWheels(0, 0, 0, 0);
+    }
+
+    public void hold(double desiredHeading) {
+        ElapsedTime timer;
+
+        double currentHeading = getImuHeading();
+        delta = normalizeHeading(desiredHeading - currentHeading);
+        timer = new ElapsedTime(ElapsedTime.Resolution.MILLISECONDS);
+        timer.reset();
+        while (creator.opModeIsActive() && Math.abs(delta) > 0.5 && timer.time() < HOLD_TIME) {
+            if (delta > 0) {
+                leftSpeed = -holdSpeed;
+                rightSpeed = holdSpeed;
+            } else {
+                leftSpeed = holdSpeed;
+                rightSpeed = -holdSpeed;
+            }
+            powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
+            creator.sleep(75);
+            powerTheWheels(0, 0, 0, 0);
+            telemetryDashboard("Hold(" + (int) desiredHeading + ")");
+            currentHeading = getImuHeading();
+            delta = normalizeHeading(desiredHeading - currentHeading);
         }
 
         if(!creator.opModeIsActive()) {
