@@ -42,7 +42,7 @@ public class Robot {
     private int rfMotorMaxTps = 2650;
     private int lrMotorMaxTps = 2610;
     private int rrMotorMaxTps = 2615;
-    private double positionPIDF = 2.5;
+    private double positionPIDF = 3.0;
     // Convert 75mm wheel to inches
     double WheelCircumferanceinMM = 75*Math.PI;
     double WheelCircumferenceInInches = WheelCircumferanceinMM/25.4;
@@ -595,18 +595,22 @@ public class Robot {
         rfMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rrMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+        System.out.print("LF: ");
         setPIDFValues(lfMotor, lfMotorMaxTps);
+        System.out.print("RF: ");
         setPIDFValues(rfMotor, rfMotorMaxTps);
+        System.out.print("LR: ");
         setPIDFValues(lrMotor, lrMotorMaxTps);
+        System.out.print("RR: ");
         setPIDFValues(rrMotor, rrMotorMaxTps);
     }
 
     private void setPIDFValues(DcMotorEx motor, int tps) {
             double D = 0;
-            double F = 32767 / tps;
+            double F = 32767.0 / tps;
             double P = 0.1 * F;
             double I = 0.1 * P;
-
+            System.out.printf("Max %d, P %.4f, I %.4f, D %.0f, F %.4f\n", tps, P, I, D, F);
             motor.setVelocityPIDFCoefficients(P, I, D, F);
             motor.setPositionPIDFCoefficients(positionPIDF);
     }

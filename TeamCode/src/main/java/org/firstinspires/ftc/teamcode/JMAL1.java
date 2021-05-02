@@ -30,10 +30,10 @@ public class JMAL1 extends UltimateGoalRobot {
     private void allThree() {
         if (targetZone == 1) {
             // 1a, going to target zone number 1 (a)
-            robot.drive(51);
+            robot.drive(59);
             robot.turn(45);
-            robot.drive(14);
-            robot.drive(-14);
+            robot.drive(7);
+            robot.drive(-7);
             robot.turn(0);
             robot.strafe(18);
             robot.turn(0);
