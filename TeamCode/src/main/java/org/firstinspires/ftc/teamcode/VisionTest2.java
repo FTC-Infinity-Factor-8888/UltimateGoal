@@ -103,7 +103,7 @@ public class VisionTest2 extends LinearOpMode {
             startMessage = "Check ERROR!!!";
         }
 
-        // TODO: add JediMasterAutonomous init here
+        // TODO: add JMAL1 init here
 
         /** Wait for the game to begin */
         telemetry.addData(">", startMessage);

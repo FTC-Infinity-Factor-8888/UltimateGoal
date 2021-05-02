@@ -10,8 +10,8 @@ import java.util.List;
 
 import static org.firstinspires.ftc.teamcode.PositionAndHeading.VUFORIA;
 
-@Autonomous(name = "JediMasterAutonomous (Blocks to Java)")
-public class JediMasterAutonomous extends UltimateGoalRobot {
+@Autonomous(name = "JMA Line 2")
+public class JMAL2 extends UltimateGoalRobot {
 
     private static final PositionAndHeading START_LINE_1 = new PositionAndHeading(-51.5, 47.75, 0,0);
     private static final PositionAndHeading START_LINE_2 = new PositionAndHeading(-51.5, 21.5, 0,0);
@@ -31,40 +31,7 @@ public class JediMasterAutonomous extends UltimateGoalRobot {
         return (int) START_LINE;
     }
 
-    private void allThreeLine1() {
-        if (targetZone == 1) {
-            // 1a, going to target zone number 1 (a)
-            robot.drive(51);
-            robot.turn(45);
-            robot.drive(14);
-            robot.drive(-14);
-            robot.turn(0);
-            robot.strafe(18);
-            robot.turn(0);
-        }
-        else if (targetZone == 2) {
-            // 1b, going to target zone number 2 (b)
-            robot.drive(72);
-            robot.turn(-50);
-            robot.drive(17.5);
-            robot.drive(-17.5);
-            robot.turn(0);
-            robot.strafe(18);
-            robot.turn(0);
-        }
-        else {
-            // 1c, going to target zone number 3 (c)
-            robot.drive(98);
-            robot.turn(45);
-            robot.drive(14);
-            robot.drive(-14);
-            robot.turn(0);
-            robot.strafe(18);
-            robot.turn(0);
-        }
-    }
-
-    private void allThreeLine2() {
+    private void allThree() {
         if (targetZone == 1) {
             // 2a, going to target zone number 1 (a)
             robot.drive(53);
@@ -119,9 +86,9 @@ public class JediMasterAutonomous extends UltimateGoalRobot {
                 targetZone = robot.findTargetZone();
                 // Put run blocks here.
                 robot.getIntakeLift().setPosition(0.9);
-                allThreeLine1();
+                allThree();
                 // This is for the other version of autonomous
-                // allThreeLine2();
+                // allThree();
 
                 robot.navigationProbe(25);
                 if (robot.navigationSource() == VUFORIA) {
