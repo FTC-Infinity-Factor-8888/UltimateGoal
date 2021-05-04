@@ -42,13 +42,12 @@ public class Robot {
     private int rfMotorMaxTps = 2650;
     private int lrMotorMaxTps = 2610;
     private int rrMotorMaxTps = 2615;
-    private double positionPIDF = 3.0;
-    // Convert 75mm wheel to inches
-    double WheelCircumferanceinMM = 75*Math.PI;
-    double WheelCircumferenceInInches = WheelCircumferanceinMM/25.4;
-    double ticksPerInch = ticksPerMotorRev/ WheelCircumferenceInInches;
-    double leftSpeed;
-    double rightSpeed;
+    private double drivePositionPIDF = 3.75;
+    private double strafePositionPIDF = 6.5;
+    private double wheelCircumferenceInInches = 10.0625;
+    private double ticksPerInch = ticksPerMotorRev/ wheelCircumferenceInInches;
+    private double leftSpeed;
+    private double rightSpeed;
 
 
     private UltimateGoalRobot creator;
@@ -490,7 +489,7 @@ public class Robot {
      * TODO: Javadoc
      * @param distance
      */
-    public void strafe(double distance) {
+    public void strafeOg(double distance) {
         debug("strafe is called");
         desiredPolarHeading = getPolarHeading();
         setMotorDistanceToTravel(distance, new int[]{-1, 1, 1, -1});
@@ -517,6 +516,46 @@ public class Robot {
         powerTheWheels(0, 0, 0, 0);
         // Reset motor mode
         setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    public void strafe(double distance) {
+        double strafeSlippage = 1.1;
+        double desiredHeading = getImuHeading();
+        lfMotor.setPositionPIDFCoefficients(strafePositionPIDF);
+        rfMotor.setPositionPIDFCoefficients(strafePositionPIDF);
+        lrMotor.setPositionPIDFCoefficients(strafePositionPIDF);
+        rrMotor.setPositionPIDFCoefficients(strafePositionPIDF);
+        setMotorDistanceToTravel(distance * strafeSlippage, new int[]{-1, 1, 1, -1});
+        double speed = robotSpeed;
+        leftSpeed = speed;
+        rightSpeed = -speed;
+        powerTheWheels(rightSpeed, leftSpeed, leftSpeed, rightSpeed);
+        telemetryDashboard("Strafe(" + distance + ")");
+        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy() && rrMotor.isBusy()) {
+            double imuHeading = getImuHeading();
+            delta = normalizeHeading(desiredHeading - imuHeading);
+            double adjustSpeed = 0;
+            if (Math.abs(delta) > deltaThreshold) {
+                adjustSpeed = correctionSpeed;
+                if (delta > 0) {
+                    adjustSpeed *= -1;
+                }
+            }
+            leftSpeed = speed + adjustSpeed;
+            rightSpeed = -speed + adjustSpeed;
+            powerTheWheels(rightSpeed, leftSpeed, leftSpeed, rightSpeed);
+            telemetryDashboard("Strafe(" + distance + ")");
+        }
+        if (!creator.opModeIsActive()) {
+            throw new EmergencyStopException("Strafe");
+        }
+        // Reset motor mode
+        setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        powerTheWheels(0, 0, 0, 0);
+        lfMotor.setPositionPIDFCoefficients(drivePositionPIDF);
+        rfMotor.setPositionPIDFCoefficients(drivePositionPIDF);
+        lrMotor.setPositionPIDFCoefficients(drivePositionPIDF);
+        rrMotor.setPositionPIDFCoefficients(drivePositionPIDF);
     }
 
     // TODO: JavaDoc
@@ -612,7 +651,7 @@ public class Robot {
             double I = 0.1 * P;
             System.out.printf("Max %d, P %.4f, I %.4f, D %.0f, F %.4f\n", tps, P, I, D, F);
             motor.setVelocityPIDFCoefficients(P, I, D, F);
-            motor.setPositionPIDFCoefficients(positionPIDF);
+            motor.setPositionPIDFCoefficients(drivePositionPIDF);
     }
 
     private void initializeIMU() {
@@ -767,7 +806,7 @@ public class Robot {
 
     //TODO: JavaDoc
     private double powerPercentage(double delta) {
-        double powerPercent = -0.00002 * Math.pow(Math.abs(delta) - 180, 2) + 1;
+        double powerPercent = -0.000027 * Math.pow(Math.abs(delta) - 180, 2) + 1;
         if (powerPercent > 1 || powerPercent < 0) {
             System.out.println("*** WARNING! POWER PERCENT IS OUT OF RANGE: delta = " + delta + ", " +
                     "powerPercent = " + powerPercent + " ***");

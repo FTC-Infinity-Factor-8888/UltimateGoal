@@ -30,10 +30,10 @@ public class JMAL1 extends UltimateGoalRobot {
     private void allThree() {
         if (targetZone == 1) {
             // 1a, going to target zone number 1 (a)
-            robot.drive(59);
-            robot.turn(45);
-            robot.drive(7);
-            robot.drive(-7);
+            robot.drive(53);
+            robot.turn(25);
+            robot.drive(17);
+            robot.drive(-17);
             robot.turn(0);
             robot.strafe(18);
             robot.turn(0);
@@ -82,10 +82,11 @@ public class JMAL1 extends UltimateGoalRobot {
                 targetZone = robot.findTargetZone();
                 // Put run blocks here.
                 robot.getIntakeLift().setPosition(0.9);
+                sleep(500);
                 allThree();
                 // This is for the other version of autonomous
                 // allThreeLine2();
-
+                /*
                 robot.navigationProbe(25);
                 if (robot.navigationSource() == VUFORIA) {
                     robot.telemetryDashboard("runOpMode");
@@ -102,6 +103,7 @@ public class JMAL1 extends UltimateGoalRobot {
                     robot.drive(19 - robot.navigationX());
                     robot.telemetryDashboard("Parked on line");
                 }
+                 */
                 robot.getIntakeLift().setPosition(0.0);
                 robot.getDumpBed().setPosition(1);
             }

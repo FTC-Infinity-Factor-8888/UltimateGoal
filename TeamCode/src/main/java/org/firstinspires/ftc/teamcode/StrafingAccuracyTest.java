@@ -6,8 +6,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-@TeleOp (name="DrivingAccuracyTest")
-public class DrivingAccuracyTest extends LinearOpMode {
+@TeleOp (name="StrafingAccuracyTest")
+public class StrafingAccuracyTest extends LinearOpMode {
     DcMotorEx lfMotor;
     DcMotorEx rfMotor;
     DcMotorEx lrMotor;
@@ -40,8 +40,9 @@ public class DrivingAccuracyTest extends LinearOpMode {
 
         // Change these to optimize the robot
 
-        double distance = 5;
-        double positionPIDF = 3.75;
+        double distance = 100;
+        double strafeSlippage = 1.1;
+        double positionPIDF = 6.5;
         double power = 0.75;
         double WheelCircumferenceInInches = 10.0625;
 
@@ -54,12 +55,12 @@ public class DrivingAccuracyTest extends LinearOpMode {
 
         double ticksPerMotorRev = 560.0;
         double ticksPerInch = ticksPerMotorRev/ WheelCircumferenceInInches;
-        int distanceToTravel = (int) (distance * ticksPerInch);
+        int distanceToTravel = (int) (distance * ticksPerInch * strafeSlippage);
 
-        lfMotor.setTargetPosition(distanceToTravel);
+        lfMotor.setTargetPosition(-distanceToTravel);
         rfMotor.setTargetPosition(distanceToTravel);
         lrMotor.setTargetPosition(distanceToTravel);
-        rrMotor.setTargetPosition(distanceToTravel);
+        rrMotor.setTargetPosition(-distanceToTravel);
 
         lfMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         rfMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -68,10 +69,10 @@ public class DrivingAccuracyTest extends LinearOpMode {
 
         if (opModeIsActive()) {
 
-            lfMotor.setPower(power);
+            lfMotor.setPower(-power);
             rfMotor.setPower(power);
             lrMotor.setPower(power);
-            rrMotor.setPower(power);
+            rrMotor.setPower(-power);
 
             while (opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy() && rrMotor.isBusy()) {
 
