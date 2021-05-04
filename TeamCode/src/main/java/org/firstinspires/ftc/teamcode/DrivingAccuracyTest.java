@@ -38,7 +38,7 @@ public class DrivingAccuracyTest extends LinearOpMode {
         lrMotor.setVelocityPIDFCoefficients(1.2554, 0.1255, 0, 12.5544);
         rrMotor.setVelocityPIDFCoefficients(1.2530, 0.1253, 0, 12.5304);
 
-        double positionPIDF = 3.0;
+        double positionPIDF = 4.5;
         double power = 0.75;
 
         lfMotor.setPositionPIDFCoefficients(positionPIDF);
@@ -48,12 +48,12 @@ public class DrivingAccuracyTest extends LinearOpMode {
 
         waitForStart();
 
-        double ticksPerMotorRev = 530.3;
+        double ticksPerMotorRev = 560.0;
         // Convert 75mm wheel to inches
         double WheelCircumferanceinMM = 75*Math.PI;
         double WheelCircumferenceInInches = WheelCircumferanceinMM/25.4;
         double ticksPerInch = ticksPerMotorRev/ WheelCircumferenceInInches;
-        int distanceToTravel = (int) (5 * ticksPerInch);
+        int distanceToTravel = (int) (10 * ticksPerInch);
 
         lfMotor.setTargetPosition(distanceToTravel);
         rfMotor.setTargetPosition(distanceToTravel);
