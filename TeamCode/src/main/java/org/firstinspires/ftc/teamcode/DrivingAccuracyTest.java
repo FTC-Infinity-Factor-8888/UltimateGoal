@@ -40,8 +40,8 @@ public class DrivingAccuracyTest extends LinearOpMode {
 
         // Change these to optimize the robot
 
-        double distance = 5;
-        double positionPIDF = 3.75;
+        double distance = 100;
+        double positionPIDF = 4.5;
         double power = 0.75;
         double WheelCircumferenceInInches = 10.0625;
 

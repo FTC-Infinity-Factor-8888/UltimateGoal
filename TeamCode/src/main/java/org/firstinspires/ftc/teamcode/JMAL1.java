@@ -27,10 +27,10 @@ public class JMAL1 extends UltimateGoalRobot {
         return (int) START_LINE;
     }
 
-    private void allThree() {
+    private void allThree(double initialDrive) {
         if (targetZone == 1) {
             // 1a, going to target zone number 1 (a)
-            robot.drive(53);
+            robot.drive(53 - initialDrive);
             robot.turn(25);
             robot.drive(17);
             robot.drive(-17);
@@ -40,17 +40,17 @@ public class JMAL1 extends UltimateGoalRobot {
         }
         else if (targetZone == 2) {
             // 1b, going to target zone number 2 (b)
-            robot.drive(72);
-            robot.turn(-50);
-            robot.drive(17.5);
-            robot.drive(-17.5);
+            robot.drive(72 - initialDrive);
+            robot.turn(-30);
+            robot.drive(18);
+            robot.drive(-18);
             robot.turn(0);
             robot.strafe(18);
             robot.turn(0);
         }
         else {
             // 1c, going to target zone number 3 (c)
-            robot.drive(98);
+            robot.drive(98 - initialDrive);
             robot.turn(45);
             robot.drive(14);
             robot.drive(-14);
@@ -65,6 +65,7 @@ public class JMAL1 extends UltimateGoalRobot {
      */
     @Override
     public void runOpMode() {
+        double detectionDrive = 9.0;
         robot = new Robot(this);
         robot.setHardwareMap(hardwareMap);
         robot.setCameraAdjustX(11.0f);
@@ -79,31 +80,13 @@ public class JMAL1 extends UltimateGoalRobot {
 
         if (opModeIsActive()) {
             try {
-                targetZone = robot.findTargetZone();
-                // Put run blocks here.
                 robot.getIntakeLift().setPosition(0.9);
                 sleep(500);
-                allThree();
-                // This is for the other version of autonomous
-                // allThreeLine2();
-                /*
-                robot.navigationProbe(25);
-                if (robot.navigationSource() == VUFORIA) {
-                    robot.telemetryDashboard("runOpMode");
-                    robot.hold(0);
-                    robot.telemetryDashboard("Square to tower");
-                    robot.strafe(robot.navigationY() - tower.yPosition);
-                    robot.telemetryDashboard("Strafe in front");
-                    robot.hold(0);
-                    robot.telemetryDashboard("Square to tower");
-                    robot.drive(tower.xPosition - robot.navigationX());
-                    robot.getDumpBed().setPosition(0);
-                    sleep(1000);
-                    robot.telemetryDashboard("Dumped rings");
-                    robot.drive(19 - robot.navigationX());
-                    robot.telemetryDashboard("Parked on line");
-                }
-                 */
+                robot.drive(detectionDrive);
+                robot.turn(-22);
+                targetZone = robot.findTargetZone();
+                robot.turn(0);
+                allThree(detectionDrive);
                 robot.getIntakeLift().setPosition(0.0);
                 robot.getDumpBed().setPosition(1);
             }

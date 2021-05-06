@@ -42,13 +42,14 @@ public class Robot {
     private int rfMotorMaxTps = 2650;
     private int lrMotorMaxTps = 2610;
     private int rrMotorMaxTps = 2615;
-    private double drivePositionPIDF = 3.75;
+    private double drivePositionPIDF = 5.0; // 4.5
     private double strafePositionPIDF = 6.5;
     private double wheelCircumferenceInInches = 10.0625;
     private double ticksPerInch = ticksPerMotorRev/ wheelCircumferenceInInches;
     private double leftSpeed;
     private double rightSpeed;
-
+    private double driveAccelerationIncrement = 0.075;
+    private double strafeAccelerationIncrement = 0.05;
 
     private UltimateGoalRobot creator;
     private Telemetry telemetry;
@@ -178,6 +179,7 @@ public class Robot {
     }
 
     public void navigationProbe(final double maximumDistance){
+        double speed = MIN_ROBOT_SPEED;
         debug("navigationProbe is called");
         // Drive should be straight along the heading
         desiredPolarHeading = getPolarHeading();
@@ -193,12 +195,12 @@ public class Robot {
         int RfMotorMaximumTicks = (int) (rfMotor.getCurrentPosition() + maximumDistanceInTicks);
         int RrMotorMaximumTicks = (int) (rrMotor.getCurrentPosition() + maximumDistanceInTicks);
 
-        leftSpeed = robotSpeed;
-        rightSpeed = robotSpeed;
+        leftSpeed = speed;
+        rightSpeed = speed;
         powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
         debug("Motors On");
 
-        double priorDelta = 0.0;
+        //double priorDelta = 0.0;
 
         while (creator.opModeIsActive() && !(lfMotor.getCurrentPosition() > LfMotorMaximumTicks ||
                 lrMotor.getCurrentPosition() > LrMotorMaximumTicks ||
@@ -208,10 +210,17 @@ public class Robot {
                 proximitySensor.getDistance(DistanceUnit.INCH) < 6)) {
 
             debug("Loop started");
-            priorDelta = adjustSpeed(maximumDistance, desiredPolarHeading, priorDelta);
+            //priorDelta = adjustSpeed(maximumDistance, desiredPolarHeading, priorDelta);
+            // TODO: Do same calculations that are in drive.
+            leftSpeed = speed;
+            rightSpeed = speed;
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             // Show motor power while driving:
             telemetryDashboard("Navigation Probe");
+
+            if (speed < robotSpeed) {
+                speed += driveAccelerationIncrement;
+            }
 
             if(!creator.opModeIsActive()) {
                 throw new EmergencyStopException("Navigation Probe");
@@ -315,10 +324,27 @@ public class Robot {
         powerTheWheels(0, 0, 0, 0);
     }
 
+    private boolean motorsShouldContinue(double distance) {
+        boolean motorsAreBusy = lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy() && rrMotor.isBusy();
+        boolean aMotorHasPassedPosition = false;
+        if (motorsAreBusy) {
+            aMotorHasPassedPosition = checkMotorPosition(lfMotor, distance) || checkMotorPosition(rfMotor, distance) ||
+                    checkMotorPosition(lrMotor, distance) || checkMotorPosition(rrMotor, distance);
+        }
+        return motorsAreBusy && !aMotorHasPassedPosition;
+    }
+
+    private boolean checkMotorPosition(DcMotorEx motor, double distance) {
+        if (distance > 0) {
+            return motor.getCurrentPosition() > motor.getTargetPosition();
+        }
+        return motor.getCurrentPosition() < motor.getTargetPosition();
+    }
+
     public void drive(double distance) {
         double desiredHeading = getImuHeading();
         setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
-        double speed = robotSpeed;
+        double speed = MIN_ROBOT_SPEED;
         if (distance < 0) {
             speed *= -1;
         }
@@ -326,7 +352,7 @@ public class Robot {
         rightSpeed = speed;
         powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
         telemetryDashboard("Drive(" + distance + ")");
-        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy() && rrMotor.isBusy()) {
+        while (creator.opModeIsActive() && motorsShouldContinue(distance)) {
             double imuHeading = getImuHeading();
             delta = normalizeHeading(desiredHeading - imuHeading);
             double adjustSpeed = 0;
@@ -340,6 +366,10 @@ public class Robot {
             rightSpeed = speed - adjustSpeed;
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             telemetryDashboard("Drive(" + distance + ")");
+
+            if (speed < robotSpeed) {
+                speed += driveAccelerationIncrement;
+            }
         }
         if (!creator.opModeIsActive()) {
             throw new EmergencyStopException("Drive");
@@ -397,13 +427,14 @@ public class Robot {
     }
 
     public void turn(double desiredHeading) {
+        double minTurnSpeed = 0.1;
         double currentHeading = getImuHeading();
         delta = normalizeHeading(desiredHeading - currentHeading);
         while (creator.opModeIsActive() && Math.abs(delta) > deltaThreshold) {
             currentHeading = getImuHeading();
             delta = normalizeHeading(desiredHeading - currentHeading);
             double deltaPercentage =  powerPercentage(delta);
-            double currentTurnSpeed = turnSpeed * deltaPercentage + MIN_ROBOT_SPEED;
+            double currentTurnSpeed = turnSpeed * deltaPercentage + minTurnSpeed;
             if (delta < 0) {
                 currentTurnSpeed = -currentTurnSpeed;
             }
@@ -526,7 +557,7 @@ public class Robot {
         lrMotor.setPositionPIDFCoefficients(strafePositionPIDF);
         rrMotor.setPositionPIDFCoefficients(strafePositionPIDF);
         setMotorDistanceToTravel(distance * strafeSlippage, new int[]{-1, 1, 1, -1});
-        double speed = robotSpeed;
+        double speed = MIN_ROBOT_SPEED;
         leftSpeed = speed;
         rightSpeed = -speed;
         powerTheWheels(rightSpeed, leftSpeed, leftSpeed, rightSpeed);
@@ -545,6 +576,10 @@ public class Robot {
             rightSpeed = -speed + adjustSpeed;
             powerTheWheels(rightSpeed, leftSpeed, leftSpeed, rightSpeed);
             telemetryDashboard("Strafe(" + distance + ")");
+
+            if (speed < robotSpeed) {
+                speed += driveAccelerationIncrement;
+            }
         }
         if (!creator.opModeIsActive()) {
             throw new EmergencyStopException("Strafe");
@@ -564,7 +599,7 @@ public class Robot {
                 proximitySensor.getDistance(DistanceUnit.INCH));
 
         telemetry.addData("Heading", "Desired: %.0f, Current: %.0f, Delta: %.0f",
-                getImuHeading(desiredPolarHeading), getImuHeading(), delta);
+                getImuHeading(), getImuHeading(), delta);
 
         telemetry.addData("Target", "LF: %d, LR: %d, RF: %d, RR: %d",
                 lfMotor.getTargetPosition(), lrMotor.getTargetPosition(), rfMotor.getTargetPosition(), rrMotor.getTargetPosition());
