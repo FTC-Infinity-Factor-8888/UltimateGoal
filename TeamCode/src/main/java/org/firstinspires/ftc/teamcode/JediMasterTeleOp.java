@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -21,11 +22,13 @@ public class JediMasterTeleOp extends LinearOpMode {
     private DcMotor lrMotor;
     private DcMotor rrMotor;
     private DcMotor intakeWheels;
+    private DcMotor ringShooter;
     //private DcMotor shooter;
 
     private BNO055IMU imu;
     private Servo dumpBed;
     private Servo intakeLift;
+    private CRServo sweeperMotor;
     //private Servo sweeper;
 
     double leftFrontMotorVelocity;
@@ -57,6 +60,8 @@ public class JediMasterTeleOp extends LinearOpMode {
      */
     @Override
     public void runOpMode() {
+        boolean sweeperButtonIsPressed;
+        double intakeHeight;
         double TurnSpeed;
         boolean robotCanKeepGoing;
         double ticksPerMotorRev;
@@ -70,13 +75,19 @@ public class JediMasterTeleOp extends LinearOpMode {
         lrMotor = hardwareMap.get(DcMotor.class, "LR Motor");
         rrMotor = hardwareMap.get(DcMotor.class, "RR Motor");
         intakeWheels = hardwareMap.get(DcMotor.class, "IntakeWheels");
+        ringShooter = hardwareMap.get(DcMotor.class, "RingShooter");
         //shooter = hardwareMap.get(DcMotor.class, "RingShooter");
 
         imu = hardwareMap.get(BNO055IMU.class, "imu");
         dumpBed = hardwareMap.get(Servo.class, "Servo1");
         intakeLift = hardwareMap.get(Servo.class, "IntakeLift");
+        sweeperMotor = hardwareMap.get(CRServo.class, "SweeperMotor");
         //sweeper = hardwareMap.get(Servo.class, "SweeperMotor");
 
+        ringShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        ringShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        sweeperMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        sweeperButtonIsPressed = false;
 
         // Initialize variables
         robotCanKeepGoing = true;
@@ -166,10 +177,24 @@ public class JediMasterTeleOp extends LinearOpMode {
                     intakeWheels.setPower(-1);
                 }
 
-                /* if (gamepad1.right_bumper == true && sweeperButtonPushed == false) {
-                    sweeper = ;
-                } */
+                if (gamepad1.right_bumper) {
+                    if (!sweeperButtonIsPressed) {
+                        sweeperButtonIsPressed = true;
+                        if (sweeperMotor.getPower() > 0) {
+                            ((DcMotorEx) ringShooter).setVelocity(0);
+                            sweeperMotor.setPower(0);
+                        } else {
+                            ((DcMotorEx) ringShooter).setVelocity(2300);
+                            sweeperMotor.setPower(1);
+                        }
+                    }
+                } else {
+                    if (sweeperButtonIsPressed) {
+                        sweeperButtonIsPressed = false;
+                    }
+                }
 
+                telemetry.addData("Shooter", ((DcMotorEx) ringShooter).getVelocity());
                 telemetry.addData("ServoPosition", dumpBed.getPosition());
                 telemetry.addData("LF Velocity", ((DcMotorEx) lfMotor).getVelocity());
                 telemetry.addData("RF Velocity", ((DcMotorEx) rfMotor).getVelocity());

@@ -29,12 +29,13 @@ public class Robot {
     private final static double SPEED_RANGE = MAX_ROBOT_SPEED - MIN_ROBOT_SPEED;
     private final static double HOLD_TIME = 1000;
 
-    // Maximum amount of ticks/second.
+    // Maximun amount of ticks/second.
     //Based off of PIDF measurements:
     private int maximumRobotTps = 2500;
     private double robotSpeed = 0.75;
+    private double strafeRobotSpeed = 0.5;
     private double turnSpeed = SPEED_RANGE;
-    private double holdSpeed = 0.1;
+    private double holdSpeed = 0.15;
     private double speedAdjust = 0.08;
     private double correctionSpeed = 0.1;
     private double ticksPerMotorRev = 530.3;
@@ -68,6 +69,7 @@ public class Robot {
     double desiredPolarHeading;
     double delta;
     double deltaThreshold = 1;
+    double turnDeltaThreshold = 5;
 
     int targetZone = 1; //if countTheRings doesn't see anything, the value is target zone 1
 
@@ -85,6 +87,9 @@ public class Robot {
     private float cameraAdjustY;
 
     // A robot without a creator makes no sense!
+    //-Anonymous
+    //Then who created Amigo from CodeGym? Commander Jonn Squirrels?
+    //-Ben
     private Robot() {}
 
     public Robot(UltimateGoalRobot creator) {
@@ -102,6 +107,7 @@ public class Robot {
 
         try {
             System.out.println("Starting camera initialization");
+            //Bet you can't find all the secret messages Ben put in here!
             ringDetector.init(this);
         }
         catch (IllegalStateException e) {
@@ -150,7 +156,7 @@ public class Robot {
                         recognition.getRight(), recognition.getBottom());
             }
         }
-        // ringdetector., initOpenCv, if openCv Sees ring
+        // ringdetecter., initOpenCv, if openCv Sees ring
         if (targetZone == 1) {
             ringDetector.initOpenCv();
             telemetry.addData("avg1", ringDetector.getAvg1());
@@ -185,7 +191,7 @@ public class Robot {
         desiredPolarHeading = getPolarHeading();
         debug("Heading " + desiredPolarHeading);
 
-        // Makes sure we're in Encoder Mode
+        // Makes sure we're in Encedor meed
         setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         double maximumDistanceInTicks = maximumDistance * ticksPerInch;
@@ -247,7 +253,7 @@ public class Robot {
         double yDist = target.yPosition - lastKnownPositionAndHeading.yPosition;
 
         double targetDist = Math.sqrt(xDist * xDist + yDist * yDist);
-        double targetImuHeading = 0;
+        double targetPolarHeading = 0;
 
         // Based on heading [insert trigonometry here].
         if (xDist == 0 && yDist == 0) {
@@ -255,27 +261,27 @@ public class Robot {
             return;
         }
         else if (xDist > 0 && yDist >= 0) {
-            targetImuHeading = Math.toDegrees(Math.atan(yDist / xDist));
+            targetPolarHeading = Math.toDegrees(Math.atan(yDist / xDist));
         }
         else if (xDist == 0 && yDist > 0) {
-            targetImuHeading = 90;
+            targetPolarHeading = 90;
         }
         else if (xDist < 0) {
             // it doesn't matter if y is less than, greater than, or equal to zero, the math is the same!
-            targetImuHeading = Math.toDegrees(Math.atan(yDist / xDist)) + 180;
+            targetPolarHeading = Math.toDegrees(Math.atan(yDist / xDist)) + 180;
         }
         else if (xDist == 0 && yDist < 0) {
-            targetImuHeading = 270;
+            targetPolarHeading = 270;
         }
         else if (xDist > 0 && yDist < 0) {
-            targetImuHeading = Math.toDegrees(Math.atan(yDist / xDist)) + 360;
+            targetPolarHeading = Math.toDegrees(Math.atan(yDist / xDist)) + 360;
         }
 
         // How far does the robot need to turn.
-        targetImuHeading = normalizeHeading(targetImuHeading - getImuHeading());
+        targetPolarHeading = normalizeHeading(targetPolarHeading - getPolarHeading());
 
         // turn "A" degrees
-        turn(targetImuHeading);
+        turn(getImuHeading(targetPolarHeading));
         telemetryDashboard("Drive To");
 
         drive(targetDist);
@@ -324,12 +330,14 @@ public class Robot {
         powerTheWheels(0, 0, 0, 0);
     }
 
-    private boolean motorsShouldContinue(double distance) {
+    private boolean motorsShouldContinue(double distance, int[] motorDirection) {
         boolean motorsAreBusy = lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy() && rrMotor.isBusy();
         boolean aMotorHasPassedPosition = false;
         if (motorsAreBusy) {
-            aMotorHasPassedPosition = checkMotorPosition(lfMotor, distance) || checkMotorPosition(rfMotor, distance) ||
-                    checkMotorPosition(lrMotor, distance) || checkMotorPosition(rrMotor, distance);
+            aMotorHasPassedPosition = checkMotorPosition(lfMotor, distance * motorDirection[0])
+                    || checkMotorPosition(lrMotor, distance * motorDirection[1])
+                    || checkMotorPosition(rfMotor, distance * motorDirection[2])
+                    || checkMotorPosition(rrMotor, distance * motorDirection[3]);
         }
         return motorsAreBusy && !aMotorHasPassedPosition;
     }
@@ -342,6 +350,7 @@ public class Robot {
     }
 
     public void drive(double distance) {
+        setMotorMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         double desiredHeading = getImuHeading();
         setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
         double speed = MIN_ROBOT_SPEED;
@@ -352,8 +361,9 @@ public class Robot {
         rightSpeed = speed;
         powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
         telemetryDashboard("Drive(" + distance + ")");
-        while (creator.opModeIsActive() && motorsShouldContinue(distance)) {
+        while (creator.opModeIsActive() && motorsShouldContinue(distance, new int[]{1, 1, 1, 1})) {
             double imuHeading = getImuHeading();
+            //Ben is better  at coding than William
             delta = normalizeHeading(desiredHeading - imuHeading);
             double adjustSpeed = 0;
             if (Math.abs(delta) > deltaThreshold) {
@@ -430,7 +440,9 @@ public class Robot {
         double minTurnSpeed = 0.1;
         double currentHeading = getImuHeading();
         delta = normalizeHeading(desiredHeading - currentHeading);
-        while (creator.opModeIsActive() && Math.abs(delta) > deltaThreshold) {
+        double priorDelta = delta;
+        int ringingCount = 0;
+        while (creator.opModeIsActive() && Math.abs(delta) > turnDeltaThreshold && ringingCount <= 3) {
             currentHeading = getImuHeading();
             delta = normalizeHeading(desiredHeading - currentHeading);
             double deltaPercentage =  powerPercentage(delta);
@@ -442,6 +454,10 @@ public class Robot {
             rightSpeed = currentTurnSpeed;
             powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             telemetryDashboard("Turn(" + (int) desiredHeading + ")");
+            if (Math.signum(delta) != Math.signum(priorDelta) && delta != 0 && priorDelta != 0) {
+                ringingCount++;
+            }
+            priorDelta = delta;
         }
         if(!creator.opModeIsActive()) {
             throw new EmergencyStopException("Turn");
@@ -550,6 +566,7 @@ public class Robot {
     }
 
     public void strafe(double distance) {
+        setMotorMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         double strafeSlippage = 1.1;
         double desiredHeading = getImuHeading();
         lfMotor.setPositionPIDFCoefficients(strafePositionPIDF);
@@ -562,7 +579,7 @@ public class Robot {
         rightSpeed = -speed;
         powerTheWheels(rightSpeed, leftSpeed, leftSpeed, rightSpeed);
         telemetryDashboard("Strafe(" + distance + ")");
-        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy() && rrMotor.isBusy()) {
+        while (creator.opModeIsActive() && motorsShouldContinue(distance, new int[]{-1, 1, 1, -1})) {
             double imuHeading = getImuHeading();
             delta = normalizeHeading(desiredHeading - imuHeading);
             double adjustSpeed = 0;
@@ -573,11 +590,11 @@ public class Robot {
                 }
             }
             leftSpeed = speed + adjustSpeed;
-            rightSpeed = -speed + adjustSpeed;
+            rightSpeed = -speed - adjustSpeed;
             powerTheWheels(rightSpeed, leftSpeed, leftSpeed, rightSpeed);
             telemetryDashboard("Strafe(" + distance + ")");
 
-            if (speed < robotSpeed) {
+            if (speed < strafeRobotSpeed) {
                 speed += driveAccelerationIncrement;
             }
         }
@@ -929,6 +946,7 @@ public class Robot {
             }
             else if (heading < -180.0) {
                 heading += 360.0;
+                //Ben has learned to code! Yay!
             }
         }
         return heading;

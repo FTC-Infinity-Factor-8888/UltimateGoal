@@ -160,7 +160,7 @@ public class ObjectDetector {
             // should be set to the value of the images used to create the TensorFlow Object Detection model
             // (typically 16/9).
             tfod.setZoom(1.0, 16.0 / 9.0);
-            tfod.setClippingMargins(200, 200, 200, 0);
+            tfod.setClippingMargins(10, 200, 10, 0);
         } else {
             throw new IllegalStateException("tfod did NOT start");
         }
@@ -469,14 +469,14 @@ public class ObjectDetector {
             int halfHeight = height / 2;
             int quarterHeight = halfHeight / 2;
 
-            /*
             box1_pointA = new Point(
                     margin * 6, halfHeight + quarterHeight);
             box1_pointB = new Point(
                     halfWidth - margin * 2, height - margin * 2);
-            */
+            /*
             box1_pointA = new Point(quarterWidth, halfHeight + quarterHeight);
             box1_pointB = new Point(halfWidth + quarterWidth, height);
+            */
             box2_pointA = new Point(
                     halfWidth + margin * 8, halfHeight + quarterHeight);
             box2_pointB = new Point(

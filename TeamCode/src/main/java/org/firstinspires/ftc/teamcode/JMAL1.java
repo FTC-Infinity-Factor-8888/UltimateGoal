@@ -14,6 +14,7 @@ public class JMAL1 extends UltimateGoalRobot {
     private static final PositionAndHeading TARGET_ZONE_A = new PositionAndHeading(13, 58, 0,0);
     private static final PositionAndHeading TARGET_ZONE_B = new PositionAndHeading(34, 35, 0,0);
     private static final PositionAndHeading TARGET_ZONE_C = new PositionAndHeading(58, 58, 0,0);
+    private static final PositionAndHeading BLUE_TOWER_GOAL = new PositionAndHeading(-69, 47, 0, 0);
 
     private static final double START_LINE = 1; // This autonomous program is for start line one.
 
@@ -37,6 +38,7 @@ public class JMAL1 extends UltimateGoalRobot {
             robot.turn(0);
             robot.strafe(18);
             robot.turn(0);
+            robot.drive(20);
         }
         else if (targetZone == 2) {
             // 1b, going to target zone number 2 (b)
@@ -45,18 +47,18 @@ public class JMAL1 extends UltimateGoalRobot {
             robot.drive(18);
             robot.drive(-18);
             robot.turn(0);
-            robot.strafe(18);
-            robot.turn(0);
+            //robot.strafe(28);
+            //robot.turn(0);
         }
         else {
             // 1c, going to target zone number 3 (c)
             robot.drive(98 - initialDrive);
-            robot.turn(45);
-            robot.drive(14);
-            robot.drive(-14);
+            robot.turn(35);
+            robot.drive(17);
+            robot.drive(-17);
             robot.turn(0);
-            robot.strafe(18);
-            robot.turn(0);
+            robot.drive(-29);
+
         }
     }
 
@@ -65,7 +67,7 @@ public class JMAL1 extends UltimateGoalRobot {
      */
     @Override
     public void runOpMode() {
-        double detectionDrive = 9.0;
+        double detectionDrive = 0;
         robot = new Robot(this);
         robot.setHardwareMap(hardwareMap);
         robot.setCameraAdjustX(11.0f);
@@ -80,15 +82,17 @@ public class JMAL1 extends UltimateGoalRobot {
 
         if (opModeIsActive()) {
             try {
+                targetZone = robot.findTargetZone();
                 robot.getIntakeLift().setPosition(0.9);
                 sleep(500);
-                robot.drive(detectionDrive);
-                robot.turn(-22);
-                targetZone = robot.findTargetZone();
-                robot.turn(0);
                 allThree(detectionDrive);
-                robot.getIntakeLift().setPosition(0.0);
+                //robot.navigationProbe(50);
+                //robot.cautiousDriving(BLUE_TOWER_GOAL);
+                /*robot.getDumpBed().setPosition(1);
+                sleep(3000);
                 robot.getDumpBed().setPosition(1);
+                robot.drive(-48);*/
+                robot.getIntakeLift().setPosition(0.0);
             }
             catch (EmergencyStopException e) {
                 // FORCE QUIT THE PROGRAM RIGHT NOW!!!
