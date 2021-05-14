@@ -15,6 +15,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 public class FLLDrive{
+    private final static double MAX_ROBOT_SPEED = 1.0;
+    private final static double MIN_ROBOT_SPEED = 0.3;
+
     private UltimateGoalRobot creator;
     private Telemetry telemetry;
     private HardwareMap hardwareMap;
@@ -107,11 +110,26 @@ public class FLLDrive{
         setMotorMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
+    private void resetMotors() {
+        setMotorMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
+
+    private double getMotorPosition() {`
+        double lfPosition = lfMotor.getCurrentPosition();
+        double rfPosition = rfMotor.getCurrentPosition();
+        double lrPosition = lrMotor.getCurrentPosition();
+        double rrPosition = rrMotor.getCurrentPosition();
+
+        return (lfPosition + rfPosition + lrPosition + rrPosition) / 4;
+    }
+
     public void fllDrive(double distance) {
         double desiredHeading = getImuHeading();
         setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
 
         double accelDecelInches;
+
+        double halfSlope = MAX_ROBOT_SPEED - MIN_ROBOT_SPEED;
 
         if (distance / 8 < 2) {
             accelDecelInches = 2;
@@ -120,6 +138,12 @@ public class FLLDrive{
             accelDecelInches = distance / 8;
         }
 
-        
+        double wholeSlope = halfSlope / accelDecelInches;
+
+        resetMotors();
+        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy()
+                && rrMotor.isBusy()) {
+
+        }
     }
 }
