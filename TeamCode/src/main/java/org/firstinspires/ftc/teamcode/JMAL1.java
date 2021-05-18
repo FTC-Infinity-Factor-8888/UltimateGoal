@@ -31,33 +31,33 @@ public class JMAL1 extends UltimateGoalRobot {
     private void allThree(double initialDrive) {
         if (targetZone == 1) {
             // 1a, going to target zone number 1 (a)
-            robot.drive(53 - initialDrive);
+            robot.fllDrive(53 - initialDrive);
             robot.turn(25);
-            robot.drive(17);
-            robot.drive(-17);
+            robot.fllDrive(17);
+            robot.fllDrive(-17);
             robot.turn(0);
             robot.strafe(18);
             robot.turn(0);
-            robot.drive(20);
+            robot.fllDrive(20);
         }
         else if (targetZone == 2) {
             // 1b, going to target zone number 2 (b)
-            robot.drive(72 - initialDrive);
+            robot.fllDrive(72 - initialDrive);
             robot.turn(-30);
-            robot.drive(18);
-            robot.drive(-18);
+            robot.fllDrive(18);
+            robot.fllDrive(-18);
             robot.turn(0);
             //robot.strafe(28);
             //robot.turn(0);
         }
         else {
             // 1c, going to target zone number 3 (c)
-            robot.drive(98 - initialDrive);
+            robot.fllDrive(98 - initialDrive);
             robot.turn(35);
-            robot.drive(17);
-            robot.drive(-17);
+            robot.fllDrive(17);
+            robot.fllDrive(-17);
             robot.turn(0);
-            robot.drive(-29);
+            robot.fllDrive(-29);
 
         }
     }
@@ -74,7 +74,7 @@ public class JMAL1 extends UltimateGoalRobot {
         robot.setCameraAdjustY(-4.5f);
         robot.init();
 
-        telemetry.addData("Status", "Ready to start - v1.9.9");
+        telemetry.addData("Status", "Ready to start - v2.0");
         telemetry.addData("ProximitySensor", robot.getProximitySensor().getDistance(DistanceUnit.INCH));
         telemetry.update();
 

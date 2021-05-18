@@ -51,7 +51,7 @@ public class Robot {
     private double rightSpeed;
     private double driveAccelerationIncrement = 0.075;
     private double strafeAccelerationIncrement = 0.05;
-
+    //
     private UltimateGoalRobot creator;
     private Telemetry telemetry;
     private HardwareMap hardwareMap;
@@ -389,6 +389,62 @@ public class Robot {
         powerTheWheels(0, 0, 0, 0);
     }
 
+    public void fllDrive(double distance) {
+        setMotorMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        double desiredHeading = getImuHeading();
+        setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
+
+        double accelInches;
+        double decelInches;
+
+        double halfSlope = MAX_ROBOT_SPEED - MIN_ROBOT_SPEED;
+
+        if (distance / 8 < 2) {
+            accelInches = 2;
+        }
+        else {
+            accelInches = distance / 8;
+        }
+
+        if (distance / 6 < 3) {
+            decelInches = 3;
+        }
+        else {
+            decelInches = distance / 6;
+        }
+
+        double wholeAccelSlope = halfSlope / accelInches;
+        double wholeDecelSlope = -halfSlope / decelInches;
+
+        while (creator.opModeIsActive())
+
+        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy()
+                && rrMotor.isBusy() && getMotorPosition() <= accelInches) {
+
+            double acceleration = wholeAccelSlope * getMotorPosition();
+            powerTheWheels(acceleration, acceleration, acceleration, acceleration);
+        }
+        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy()
+                && rrMotor.isBusy() && getMotorPosition() <= distance - accelInches - decelInches) {
+
+            powerTheWheels(MAX_ROBOT_SPEED, MAX_ROBOT_SPEED, MAX_ROBOT_SPEED, MAX_ROBOT_SPEED);
+        }
+        resetMotors();
+        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy()
+                && rrMotor.isBusy() && getMotorPosition() <= distance) {
+
+            double deceleration = wholeDecelSlope * getMotorPosition();
+            powerTheWheels(deceleration, deceleration, deceleration, deceleration);
+        }
+
+        if (!creator.opModeIsActive()) {
+            throw new EmergencyStopException("FLLDrive");
+        }
+        setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        powerTheWheels(0, 0, 0, 0);
+
+    }
+
     /**
      * Turn turns the robot till it is facing imuHeading.
      * @param imuHeading Heading is in IMU coordinates (0* points to the tower goal).
@@ -501,7 +557,7 @@ public class Robot {
 
         powerTheWheels(0, 0, 0, 0);
     }
-
+//hi
     public void hold(double desiredHeading) {
         ElapsedTime timer;
 
@@ -694,6 +750,22 @@ public class Robot {
         setPIDFValues(lrMotor, lrMotorMaxTps);
         System.out.print("RR: ");
         setPIDFValues(rrMotor, rrMotorMaxTps);
+    }
+
+    private void resetMotors() {
+        setMotorMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        setMotorMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
+
+    private double getMotorPosition() {
+        double lfPosition = lfMotor.getCurrentPosition();
+        double rfPosition = rfMotor.getCurrentPosition();
+        double lrPosition = lrMotor.getCurrentPosition();
+        double rrPosition = rrMotor.getCurrentPosition();
+
+        double motorPositionAverage = (lfPosition + rfPosition + lrPosition + rrPosition) / 4;
+
+        return motorPositionAverage * ticksPerInch;
     }
 
     private void setPIDFValues(DcMotorEx motor, int tps) {

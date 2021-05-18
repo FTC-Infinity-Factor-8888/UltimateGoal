@@ -17,7 +17,7 @@ public class FLLDriveTest extends UltimateGoalRobot {
     private static final double START_LINE = 1; // This autonomous program is for start line one.
 
     private Robot robot;
-    private FLLDrive fll;
+    private FakeFLLDrive fll;
     private int targetZone;
 
     private PositionAndHeading tower = new PositionAndHeading(69,36,0,0);
