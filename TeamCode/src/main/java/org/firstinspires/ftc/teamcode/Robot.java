@@ -416,33 +416,27 @@ public class Robot {
         double wholeAccelSlope = halfSlope / accelInches;
         double wholeDecelSlope = -halfSlope / decelInches;
 
-        while (creator.opModeIsActive())
-
-        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy()
-                && rrMotor.isBusy() && getMotorPosition() <= accelInches) {
-
-            double acceleration = wholeAccelSlope * getMotorPosition();
-            powerTheWheels(acceleration, acceleration, acceleration, acceleration);
-        }
-        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy()
-                && rrMotor.isBusy() && getMotorPosition() <= distance - accelInches - decelInches) {
-
-            powerTheWheels(MAX_ROBOT_SPEED, MAX_ROBOT_SPEED, MAX_ROBOT_SPEED, MAX_ROBOT_SPEED);
-        }
-        resetMotors();
-        while (creator.opModeIsActive() && lfMotor.isBusy() && rfMotor.isBusy() && lrMotor.isBusy()
-                && rrMotor.isBusy() && getMotorPosition() <= distance) {
-
-            double deceleration = wholeDecelSlope * getMotorPosition();
-            powerTheWheels(deceleration, deceleration, deceleration, deceleration);
+        while (creator.opModeIsActive() && motorsShouldContinue(distance, new int[]{1, 1, 1, 1})) {
+            double motorPosition = getMotorPosition();
+            double power = 0;
+            if (motorPosition <= accelInches) {
+                power = wholeAccelSlope * motorPosition;
+            }
+            else if (motorPosition <= distance - accelInches - decelInches) {
+                power = MAX_ROBOT_SPEED;
+            }
+            else if (motorPosition <= distance) {
+                power = wholeDecelSlope * motorPosition;
+            }
+            powerTheWheels(power, power, power, power);
         }
 
         if (!creator.opModeIsActive()) {
             throw new EmergencyStopException("FLLDrive");
         }
+
         setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
         powerTheWheels(0, 0, 0, 0);
-
     }
 
     /**
