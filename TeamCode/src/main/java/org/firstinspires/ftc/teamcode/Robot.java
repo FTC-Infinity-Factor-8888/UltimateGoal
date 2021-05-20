@@ -765,7 +765,7 @@ public class Robot {
 
         double motorPositionAverage = (lfPosition + rfPosition + lrPosition + rrPosition) / 4;
 
-        return motorPositionAverage * ticksPerInch;
+        return motorPositionAverage / ticksPerInch;
     }
 
     private void setPIDFValues(DcMotorEx motor, int tps) {
