@@ -416,6 +416,8 @@ public class Robot {
         double wholeAccelSlope = halfSlope / accelInches;
         double wholeDecelSlope = -halfSlope / decelInches;
 
+        powerTheWheels(MIN_ROBOT_SPEED, MIN_ROBOT_SPEED, MIN_ROBOT_SPEED, MIN_ROBOT_SPEED);
+        telemetryDashboard("FLLDrive(" + distance + ")");
         while (creator.opModeIsActive() && motorsShouldContinue(distance, new int[]{1, 1, 1, 1})) {
             double motorPosition = getMotorPosition();
             double power = 0;
@@ -429,6 +431,7 @@ public class Robot {
                 power = wholeDecelSlope * motorPosition;
             }
             powerTheWheels(power, power, power, power);
+            telemetryDashboard("FLLDrive(" + distance + ")");
         }
 
         if (!creator.opModeIsActive()) {
