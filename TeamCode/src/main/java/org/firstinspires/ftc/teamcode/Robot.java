@@ -422,13 +422,13 @@ public class Robot {
             double motorPosition = getMotorPosition();
             double power = 0;
             if (motorPosition <= accelInches) {
-                power = wholeAccelSlope * motorPosition;
+                power = MIN_ROBOT_SPEED + wholeAccelSlope * motorPosition;
             }
             else if (motorPosition <= distance - accelInches - decelInches) {
                 power = MAX_ROBOT_SPEED;
             }
             else if (motorPosition <= distance) {
-                power = wholeDecelSlope * motorPosition;
+                power = MIN_ROBOT_SPEED + wholeDecelSlope * motorPosition;
             }
             powerTheWheels(power, power, power, power);
             telemetryDashboard("FLLDrive(" + distance + ")");
@@ -761,10 +761,6 @@ public class Robot {
         double rrPosition = rrMotor.getCurrentPosition();
 
         double motorPositionAverage = (lfPosition + rfPosition + lrPosition + rrPosition) / 4;
-
-        if (motorPositionAverage < 0.1) {
-            return (motorPositionAverage + 5.27) * ticksPerInch;
-        }
 
         return motorPositionAverage * ticksPerInch;
     }
