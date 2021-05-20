@@ -763,7 +763,7 @@ public class Robot {
         double motorPositionAverage = (lfPosition + rfPosition + lrPosition + rrPosition) / 4;
 
         if (motorPositionAverage < 0.1) {
-            return (motorPositionAverage + 0.1) * ticksPerInch;
+            return (motorPositionAverage + 5.27) * ticksPerInch;
         }
 
         return motorPositionAverage * ticksPerInch;
