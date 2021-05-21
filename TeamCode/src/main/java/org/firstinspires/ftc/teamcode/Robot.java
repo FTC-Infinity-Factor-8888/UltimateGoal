@@ -350,6 +350,10 @@ public class Robot {
     }
 
     public void drive(double distance) {
+        drive2(distance);
+    }
+
+    public void drive2(double distance) {
         setMotorMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         double desiredHeading = getImuHeading();
         setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
@@ -363,7 +367,6 @@ public class Robot {
         telemetryDashboard("Drive(" + distance + ")");
         while (creator.opModeIsActive() && motorsShouldContinue(distance, new int[]{1, 1, 1, 1})) {
             double imuHeading = getImuHeading();
-            //Ben is better  at coding than William
             delta = normalizeHeading(desiredHeading - imuHeading);
             double adjustSpeed = 0;
             if (Math.abs(delta) > deltaThreshold) {
@@ -394,23 +397,27 @@ public class Robot {
         double desiredHeading = getImuHeading();
         setMotorDistanceToTravel(distance, new int[]{1, 1, 1, 1});
 
+        double absDistance = Math.abs(distance);
+        double direction = (distance > 0) ? 1 : -1;
+
         double accelInches;
         double decelInches;
 
-        double halfSlope = MAX_ROBOT_SPEED - MIN_ROBOT_SPEED;
+        double halfSlope = robotSpeed - MIN_ROBOT_SPEED;
 
-        if (distance / 8 < 2) {
+
+        if (absDistance / 8 < 2) {
             accelInches = 2;
         }
         else {
-            accelInches = distance / 8;
+            accelInches = absDistance / 8;
         }
 
-        if (distance / 6 < 3) {
+        if (absDistance / 6 < 3) {
             decelInches = 3;
         }
         else {
-            decelInches = distance / 6;
+            decelInches = absDistance / 6;
         }
 
         double wholeAccelSlope = halfSlope / accelInches;
@@ -423,6 +430,7 @@ public class Robot {
         while (creator.opModeIsActive() && motorsShouldContinue(distance, new int[]{1, 1, 1, 1})) {
             double motorPosition = getMotorPosition();
             double power = 0;
+
             if (motorPosition <= accelInches) {
                 power = MIN_ROBOT_SPEED + wholeAccelSlope * motorPosition;
             }
@@ -432,8 +440,22 @@ public class Robot {
             else if (motorPosition <= distance) {
                 power = MIN_ROBOT_SPEED + wholeDecelSlope * motorPosition;
             }
+            power *= direction;
+
+            double currentHeading = getImuHeading();
+            delta = normalizeHeading(desiredHeading - currentHeading);
+            double adjustSpeed = 0;
+            if (Math.abs(delta) > deltaThreshold) {
+                adjustSpeed = correctionSpeed;
+                if (delta > 0) {
+                    adjustSpeed *= -1;
+                }
+            }
+            leftSpeed = power + adjustSpeed;
+            rightSpeed = power - adjustSpeed;
+
             System.out.println("FLLDrive: motorPosition " + motorPosition + " power " + power);
-            powerTheWheels(power, power, power, power);
+            powerTheWheels(leftSpeed, leftSpeed, rightSpeed, rightSpeed);
             telemetryDashboard("FLLDrive(" + distance + ")");
         }
 
@@ -939,13 +961,26 @@ public class Robot {
         return powerPercent;
     }
 
-    //TODO: Add JavaDoc
+
+    /**
+     * Powers all 4 of the robot's wheels.
+     * If the motor mode is set to RUN_USING_ENCODER, then PTW sets the velocity.
+     * If the motor mode is set to RUN_TO_POSITION, then PTW sets the power.
+     *
+     * The robot is only capable of accepting speeds of -1 --> 1.
+     * If you give a value out of that range, PTW will scale down the numbers appropriately.
+     *
+     * @param lfPower power/velocity applied to the left front wheel.
+     * @param lrPower power/velocity applied to the left rear wheel.
+     * @param rfPower power/velocity applied to the right front wheel.
+     * @param rrPower power/velocity applied to the right rear wheel.
+     */
     private void powerTheWheels(double lfPower, double lrPower, double rfPower, double rrPower) {
         double leftMax = Math.max(Math.abs(lfPower), Math.abs(lrPower));
         double rightMax = Math.max(Math.abs(rfPower), Math.abs(rrPower));
         double max = Math.max (leftMax, rightMax);
 
-        if(max > MAX_ROBOT_SPEED) {
+        if (max > MAX_ROBOT_SPEED) {
             lfPower /= max;
             lrPower /= max;
             rfPower /= max;
