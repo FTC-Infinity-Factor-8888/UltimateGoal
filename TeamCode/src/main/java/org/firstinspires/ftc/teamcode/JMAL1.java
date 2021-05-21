@@ -74,7 +74,7 @@ public class JMAL1 extends UltimateGoalRobot {
         robot.setCameraAdjustY(-4.5f);
         robot.init();
 
-        telemetry.addData("Status", "Ready to start - v2.3");
+        telemetry.addData("Status", "Ready to start - v2.4");
         telemetry.addData("ProximitySensor", robot.getProximitySensor().getDistance(DistanceUnit.INCH));
         telemetry.update();
 

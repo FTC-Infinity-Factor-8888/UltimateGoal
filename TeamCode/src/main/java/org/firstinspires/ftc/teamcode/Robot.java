@@ -350,7 +350,7 @@ public class Robot {
     }
 
     public void drive(double distance) {
-        drive2(distance);
+        fllDrive(distance);
     }
 
     public void drive2(double distance) {
@@ -403,7 +403,7 @@ public class Robot {
         double accelInches;
         double decelInches;
 
-        double halfSlope = robotSpeed - MIN_ROBOT_SPEED;
+        double halfSlope = MAX_ROBOT_SPEED - MIN_ROBOT_SPEED;
 
 
         if (absDistance / 8 < 2) {
