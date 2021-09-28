@@ -27,9 +27,9 @@ public class Robot {
     private final static double MIN_ROBOT_SPEED = 0.3;
     private final static double MAX_ROBOT_SPEED = 1.0;
     private final static double SPEED_RANGE = MAX_ROBOT_SPEED - MIN_ROBOT_SPEED;
-    private final static double HOLD_TIME = 1000;
+    private final static double HOLD_TIME = 1000; // In ms
 
-    // Maximun amount of ticks/second.
+    // Maximum amount of ticks/second.
     //Based off of PIDF measurements:
     private int maximumRobotTps = 2500;
     private double robotSpeed = 0.75;
