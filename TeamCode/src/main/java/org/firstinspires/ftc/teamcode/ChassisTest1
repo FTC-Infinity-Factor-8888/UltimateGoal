@@ -40,9 +40,9 @@ public class TeleOpFF extends LinearOpMode {
                 LRMotor.setPower(lDrive);
                 RFMotor.setPower(rDrive);
                 RRMotor.setPower(rDrive);
-                telemetry.addData("Left stick", lDrive);
-                telemetry.addData("Right stick", rDrive);
-                telemetry.update();
+                telemetry.addData("Left stick", lDrive); //
+                telemetry.addData("Right stick", rDrive); //
+                telemetry.update(); // Updated telemetry based on how much the robot moved
             }
         }
     }
