@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 @TeleOp(name = "TeleOpFF (Blocks to Java)")
-public class TeleOpFF extends LinearOpMode {
+class TeleOpFF extends LinearOpMode {
 
     private DcMotor LFMotor;
     private DcMotor LRMotor;
