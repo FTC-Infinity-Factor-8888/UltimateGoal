@@ -16,15 +16,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
-import org.firstinspires.ftc.teamcode.ultimategoal.NavigationInfo;
-import org.firstinspires.ftc.teamcode.ultimategoal.PositionAndHeading;
-import org.firstinspires.ftc.teamcode.ultimategoal.UltimateGoalRobot;
 
 import java.util.List;
 
-import static org.firstinspires.ftc.teamcode.ultimategoal.PositionAndHeading.FIXED;
-import static org.firstinspires.ftc.teamcode.ultimategoal.PositionAndHeading.IMU;
-import static org.firstinspires.ftc.teamcode.ultimategoal.PositionAndHeading.VUFORIA;
+import static org.firstinspires.ftc.teamcode.PositionAndHeading.FIXED;
+import static org.firstinspires.ftc.teamcode.PositionAndHeading.IMU;
+import static org.firstinspires.ftc.teamcode.PositionAndHeading.VUFORIA;
 
 public class Robot {
     private final static double MIN_ROBOT_SPEED = 0.3;
@@ -1067,5 +1064,4 @@ public class Robot {
     }
 
 }
-
 

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.ultimategoal;
+package org.firstinspires.ftc.teamcode;
 
 public class PositionAndHeading {
     double xPosition;
