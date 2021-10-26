@@ -30,7 +30,7 @@ public class JediMasterTeleOp extends LinearOpMode {
     private Servo intakeLift;
     private CRServo sweeperMotor;
     //private Servo sweeper;
-
+    
     double leftFrontMotorVelocity;
     double leftRearMotorVelocity;
     double rightFrontMotorVelocity;

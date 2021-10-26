@@ -1,14 +1,12 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.ultimategoal;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.teamcode.EmergencyStopException;
+import org.firstinspires.ftc.teamcode.Robot;
 
-import java.util.List;
-
-import static org.firstinspires.ftc.teamcode.PositionAndHeading.VUFORIA;
+import static org.firstinspires.ftc.teamcode.ultimategoal.PositionAndHeading.VUFORIA;
 
 @Autonomous(name = "JMA Line 2")
 public class JMAL2 extends UltimateGoalRobot {
